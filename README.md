@@ -13,6 +13,11 @@ This repository summarizes my first-author publication in *Breast Cancer Researc
 - Weighted Cox proportional hazard models
 - Case-only logistic regression for gene-environment interaction
 
+## 📊 Key Finding: Isoflavone Intake and Breast Cancer Risk
+
+![Figure 2 - Isoflavone intake and BC risk](results/plots/figure2_isoflavone_bc_risk.png)
+
+
 ## 📁 What’s Included
 - `sas_code/`: Key analysis scripts (mock version)
 - `study_overview.md`: Description of the study design and key variables
