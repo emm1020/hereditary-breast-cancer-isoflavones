@@ -1,0 +1,4863 @@
+libname a "F:\논문\#1\데이터\ISF_BC(03082018)\total";
+/*식이데이터_FFQ*/
+DATA ffq; SET a.ffq2;
+RENAME sex=gender;
+RENAME age=agef;/* F002_FQ- 콩밥  F003_FQ-콩+쌀밥  F088_FQ-두유  F024_FQ-콩섭취  F027_FQ- 두부섭취*/
+RENAME F002_FQ=soyrice;
+RENAME F003_FQ=soyandrice;
+RENAME F088_FQ=soymilk; 
+RENAME F024_FQ=soybean;
+RENAME F027_FQ=tofu; RUN; /*2737*/
+/*식이데이터_Imputation(canpro)*/
+DATA nut; SET a.nutrition;
+RENAME b25=isoflav; RUN;/* 2734개의 관측치와 2개의 변수*/
+proc sort DATA=ffq; BY id; proc sort DATA=nut; BY id; RUN;
+/*FFQ 데이터 + Imputation 데이터 (canpro) */
+DATA nut_imp; MERGE nut ffq; BY id ;RUN;  /* 2734개의 관측치와 9개의 변수*/
+
+/*전체 데이터: total_160902*/ 
+DATA total; SET  a.total_160902;
+IF id^='' THEN total=1;
+/*쓸데없는 변수제거*/
+DROP VAR1068	VAR1069	VAR1070	VAR1071	VAR1072	VAR1073	VAR1074	VAR1075	VAR1076	VAR1077 VAR1078 VAR1079 VAR1080	VAR1081	VAR1082	VAR1083	VAR1084	VAR1085	VAR1086	VAR1087	VAR1088	
+VAR1089	VAR1090	VAR1091	VAR1092	VAR1093	VAR1094	VAR1095	VAR1096	VAR1097	VAR1098	VAR1099 VAR1100 VAR1101 VAR1102	VAR1103	VAR1104	VAR1105	VAR1106	VAR1107	VAR1108	VAR1109	VAR1110	
+VAR1111	VAR1112	VAR1113	VAR1114	VAR1115	VAR1116	VAR1117	VAR1118	VAR1119	VAR1120	VAR1121	VAR1122 VAR1123 VAR1124	VAR1125	VAR1126	VAR1127	VAR1128	VAR1129	VAR1130	VAR1131	VAR1132
+VAR1133	VAR1134	VAR1135	VAR1136	VAR1137	VAR1138	VAR1139	VAR1140	VAR1141	VAR1142	VAR1143	VAR1144	 VAR1145 VAR1146	VAR1147	VAR1148	VAR1149	VAR1150	VAR1151	VAR1152	VAR1153	VAR1154
+VAR1155	VAR1156	VAR1157	VAR1158	VAR1159	VAR1160	VAR1161	VAR1162	VAR1163	VAR1164	VAR1165 VAR1166 VAR1167 VAR1168	VAR1169	VAR1170	VAR1171	VAR1172	VAR1173	VAR1174	VAR1175	VAR1176
+VAR1177	VAR1178	VAR1179	VAR1180	VAR1181	VAR1182	VAR1183	VAR1184	VAR1185	VAR1186	VAR1187	 VAR1188 VAR1189 VAR1190	VAR1191	VAR1192	VAR1193	VAR1194	VAR1195	VAR1196	VAR1197	VAR1198	
+VAR1199	VAR1200	VAR1201	VAR1202	VAR1203	VAR1204	VAR1205	VAR1206	VAR1207	VAR1208	VAR1209	 VAR1210 VAR1211 VAR1212	VAR1213	VAR1214	VAR1215	VAR1216	VAR1217	VAR1218	VAR1219	VAR1220	
+VAR1221	VAR1222	VAR1223	VAR1224	VAR1225	VAR1226	VAR1227	VAR1228	VAR1229	VAR1230	VAR1231	 VAR1232 VAR1233 VAR1234	VAR1235	VAR1236	VAR1237	VAR1238	VAR1239	VAR1240	VAR1241	VAR1242	
+VAR1243	VAR1244	VAR1245	VAR1246	VAR1247	VAR1248	VAR1249	VAR1250	VAR1251	VAR1252	VAR1253 VAR1254 VAR1255 VAR1256	VAR1257	VAR1258	VAR1259	VAR1260	VAR1261	VAR1262	VAR1263	VAR1264	
+VAR1265	VAR1266	VAR1267	VAR1268	VAR1269	VAR1270	VAR1271	VAR1272	VAR1273	VAR1274	VAR1275	 VAR1276 VAR1277 VAR1278	VAR1279	VAR1280	VAR1281	VAR1282	VAR1283	VAR1284	VAR1285	VAR1286	
+VAR1287	VAR1288	VAR1289	VAR1290	VAR1291	VAR1292	VAR1293	VAR1294	VAR1295;
+
+/*code:case-control*/
+id_1=substr(id,4,1.); tc1=substr(tcode1,1,3.); tc2=substr(tcode2,1,3.); tc3=substr(tcode3,1,3.); ic1=substr(icd10_1,1,3.); 
+IF tc1='C50' or tc2='C50' or tc3='C50' or ic1='C50' THEN code=1;ELSE 
+IF mammore1=3 or mammore2=3 or mamsonre1=3 or mamsonre2=3 or op in (1,2) or op_type in (1,2) THEN code=1; ELSE
+IF (leftbreacaag  in(0,999,.) and leftbreacayr in (0,9999,.)) and (rightbreacaag in (0,999,.) and rightbreacayr in (0,9999,.)) and 
+(rbreacaopyr in (0,9999,.)) and (lbreacaopyr in (0,9999,.)) THEN code=0; ELSE code=1;
+
+/*나이 이상치 -> 설문지 확인 후 수정 */
+IF id='09-2-Y043' THEN age=33; 
+IF id='13-1-Y135' THEN age=56; 
+IF id='13-2-Y173' THEN age=31; 
+IF id='28-2-Y177' THEN age=66;
+
+/*진단나이 추가*/
+/*follow up 변수: case 태어날때~진단나이/ control 태어날때~인터뷰당시나이*/
+IF code=0 THEN time_f=age; ELSE 
+IF code=1 and rightbreacaag=0 THEN time_f=leftbreacaag; ELSE
+IF code=1 and leftbreacaag=0 THEN time_f=rightbreacaag; ELSE 
+IF code=1 and (rightbreacaag<leftbreacaag) THEN time_f=rightbreacaag; ELSE
+IF code=1 and (rightbreacaag=leftbreacaag) THEN time_f=rightbreacaag; ELSE 
+IF code=1 and (rightbreacaag>leftbreacaag) THEN time_f=leftbreacaag; /*3062*/ RUN;
+PROC IMPROT out=agedx
+					datafile="G:\BACKUP\3. 융복합연구\분석데이터\agendiag.xlsx"
+					dbms=xlsx replace; 
+					run; /*123명*/
+DATA AGEDX; SET AGEDX; 
+DROP age code; RUN;
+PROC SORT DATA=TOTAL; BY id; RUN; /*3062*/
+PROC SORT DATA=AGEDX; BY id; RUN; /*123*/
+DATA total1; merge TOTAL AGEDX; BY id; RUN; /*3062 (489 control ,2573 cases) 655+2407 */
+PROC SORT DATA=nut_imp; BY id; RUN;
+PROC SORT DATA=total1; BY id; RUN;
+DATA total2; merge nut_imp total1 ; BY id; RUN;
+DATA total3; SET total2; if TOTAL='' THEN DELETE; RUN; /*2654*/
+/*family clustering*/
+DATA family; SET a.family_sas; id=f_pakohbraID; keep id f_pid;RUN;
+PROC SORT DATA=family nodupkey; BY id; RUN;  PROC SORT DATA=total3; BY id; RUN; 
+DATA fam; merge total3 family; BY id; RUN; 
+DATA total4; SET fam; if TOTAL='' THEN DELETE; RUN;
+PROC EXPORT DATA=list4     /*SAS 데이터셋 이름 */
+      OUTFILE= "D:\SAS_EDU\data\a1.xls"   /* 출력파일 이름 */
+      DBMS=EXCELCS REPLACE;
+RUN;
+DATA TOTAL5; SET TOTAL4;
+/*1. age, birthyear 삭제*/
+/*age at interview */
+IF age1^='' THEN age2=age1; ELSE age2=age;  /*2명 missing*/
+/*timef1=age at diagnosis for case/ age of interview for control*/
+IF timef1^='' THEN timef=timef1; ELSE timef=time_f; IF timef='' or age2=''or timef<20 THEN DELETE; /*3026->2974*/
+/*2.birthdate 삭제*/
+datevar=put(crf_birth,best8.); yearbt=substr(datevar,1,4.); birthyr1=yearbt*1; IF birthyr1=9999 THEN DELETE; /*2974->2970*/
+/*BRCA 정리*/
+IF crf_brca=1 and crf_braca1=8 and crf_braca2=8 THEN braca1=1;ELSE /*CRF 확인=> BRCA 1 mutation carrier*/
+IF crf_braca1 in (1,12) THEN braca1=1; ELSE braca1=0; 
+IF crf_braca2 in (1,12) THEN braca2=1; ELSE braca2=0; 
+IF crf_brca='.' and crf_braca1='.' and crf_braca2='.' THEN brca=0; /*235명=> 정상으로 코딩*/ ELSE 
+IF crf_brca=1 and crf_braca1=8 and crf_braca2=8 THEN brca=1; /*CRF 확인=> BRCA 1 mutation carrier*/ELSE
+IF crf_brca=1 THEN brca=1; ELSE IF crf_brca=2 THEN brca=0; ELSE IF crf_brca=9 THEN brca=9; 
+IF crf_brca=1 and braca1=0 and braca2=0 THEN DELETE; IF crf_brca=1 and braca1=1 and braca2=1 THEN DELETE;
+IF crf_Brca=9 THEN DELETE; /*2970->2962*/ 
+IF crf_Brca=1 THEN brca=1; ELSE IF crf_brca=2 THEN brca=0; 
+IF brca=0 THEN braca012=0; ELSE IF brca=1 and braca1=1 THEN braca012=1; ELSE IF brca=1 and braca2=1 THEN braca012=2; 
+/*1. 남자, missing 삭제*/
+IF crf_sex=2 THEN sex_=2; ELSE IF crf_sex=1 THEN sex_=1; ELSE sex_=sex; IF sex_='' or sex_=1 THEN DELETE; /*2962->2810*/  
+/*4. 증례기록 없는 사람과 날짜 잘못된 사람 삭제*/
+IF crf_gedate='.' THEN DELETE; /*2818->2662*/ IF edate=20129999 THEN DELETE;/*2810->2653*/;
+/*5. BRCA mutation noncarriers 중에서 난소암 걸렸거나 난소암 가족력 있는 대상자 제거 -> BRCA 1 carrier를 가지고 있을 것으로 생각*/
+IF leftovacaag=0 and rightovacaag=0 THEN ovcancer=0;ELSE ovcancer=1;  /*난소암*/
+fhovn1=fovca1+fovca2+fovca3; IF fhovn1=0 THEN fhovg1=0; ELSE fhovg1=1; /*난소암 가족력*/
+IF brca=0 and (ovcancer=1 or fhovg1=1) THEN DELETE; /*BRCA돌연변이 미보유자-난소암,난소암가족력 있는 경우 대상자 제거 2653->2440*/
+
+/*6.식이 missing 삭제*/
+/* F002_FQ- 콩밥  F003_FQ-콩+쌀밥  F088_FQ-두유  F024_FQ-콩섭취  F027_FQ- 두부섭취 F025_FQ=된장국*/
+IF soyrice=1 THEN soyrice_=1; ELSE IF soyrice='.' THEN soyrice_=f002_fq; ELSE soyrice_=soyrice; 
+IF soyandrice=1 THEN soynrice_=1; ELSE IF soyandrice='.' THEN soynrice_=f003_fq; ELSE soynrice_=soyandrice;
+IF soyrice_ in (7,8,9) THEN soynrice1=soyrice_; ELSE soynrice1=soynrice_; /*콩밥*/
+IF soymilk='.' THEN soymilk_=f088_fq; ELSE soymilk_=soymilk; /*두유*/
+IF soybean=1 THEN soybean_=1; ELSE IF soybean='.' THEN soybean_=f024_fq; ELSE soybean_=soybean;  /*콩*/
+IF tofu='.' THEN tofu_=f027_fq; ELSE tofu_=tofu; /*두부*/
+soypa=F025_FQ; /*된장국*/
+IF soyrice_='.' or soynrice_='.' or soymilk_='.' or soybean_='.' or tofu_='.' THEN DELETE ; /*2440->2349*/
+
+/*7. 고광필 교수님이 전달해주신 이소플라본 함유량 계산된 데이터 중에서 missing 5명*/
+IF isoflav='' THEN isofla_ko=9999; ELSE isofla_ko=round(isoflav,0.01); IF isofla_ko=9999 THEN DELETE; /*2349->2344*/RUN; 
+DATA CASE_DATE; SET TOTAL5; 
+IF CODE=1; 
+/*입적날짜 (설문조사 날짜 -EDATE) 포맷 맞추기*/
+/*입적날짜 잘못된 환자들*/
+IF id='07-1-M166' THEN nedate_=20090728; ELSE
+IF id='16-1-M163' THEN nedate_=20090812; ELSE
+IF id='02-2-L010' THEN nedate_=20080123; ELSE
+IF id='04-1-P127' THEN nedate_=20080820; ELSE
+IF id='02-2-L119' THEN nedate_=20080822; ELSE nedate_=edate; 
+edate_1=input(put(nedate_,8.),YYMMDD8.); FORMAT edate_1 YYMMDD10.;
+/*첫 유방암 진단 날짜 정리 */
+/*rblb 1-우측만(869) ; 2-좌측만(907) ; 3-우측먼저(65); 4-좌측먼저(80); 5-우좌측 같이 진단(167)*/ 
+/*유방암 좌우측이 잘못되어있는 사람 - id:01-1-J009 5번으로 코딩되어있으나->좌측먼저임 (4번)*/ 
+IF ID='01-1-J009' THEN rblb=4; ELSE  
+IF leftbreacaag=0  THEN rblb=1; ELSE IF rightbreacaag=0 THEN rblb=2; ELSE 
+IF (rightbreacaag<leftbreacaag) THEN rblb=3; ELSE IF (rightbreacaag>leftbreacaag) THEN rblb=4; ELSE IF (rightbreacaag=leftbreacaag) THEN rblb=5;
+/*우측 진단 날짜*/
+/*년*/
+/*연도가 잘못되어있는 사람 - id:16-2-Y020 2011-11-13->2010-11-13이 맞음*/
+IF id='16-2-Y020' THEN Rdiagyr_=2010; ELSE
+IF rightbreacaag=0 THEN Rdiagyr_=7000; ELSE IF rightbreacaag=999 THEN Rdiagyr_=8000; ELSE 
+IF rightbreacaag>0 and rightbreacayr in (8888,9999) THEN Rdiagyr_=8000; ELSE Rdiagyr_=rightbreacayr;
+/*월*/
+IF Rdiagyr_=7000 THEN Rdiagmo_=07; ELSE IF Rdiagyr_=8000 THEN Rdiagmo_=08; ELSE
+IF 0<Rdiagyr_<7000 and rightbreacamo in (0,88,99) THEN Rdiagmo_=08;ELSE 
+IF 0<Rdiagyr_<7000 and rightbreacamo='.' THEN Rdiagmo_=08;ELSE Rdiagmo_=rightbreacamo;
+/*일*/
+IF Rdiagyr_=7000 THEN Rdiagday_=07; ELSE IF Rdiagyr_=8000 THEN Rdiagday_=08; ELSE 
+IF 0<Rdiagyr_<7000 and rightbreacada in (0,88,99) THEN Rdiagday_=08; ELSE 
+IF 0<Rdiagyr_<7000 and rightbreacada='.' THEN Rdiagday_=08; ELSE
+IF Rdiagmo_=02 and rightbreacada=30 THEN Rdiagday_=28; ELSE Rdiagday_=rightbreacada;
+Rdatediag=mdy(Rdiagmo_,Rdiagday_,Rdiagyr_); FORMAT Rdatediag yymmdd10.; 
+/*좌측진단날짜*/
+/*년*/
+/*연도가 잘못되어있는 사람: ID=13-2-M203 2010-10-28 -> 2009-10-28이 맞음*/
+IF ID='13-2-M203' THEN Ldiagyr_=2009; ELSE IF ID='21-2-M050' THEN Ldiagyr_=2004; ELSE
+IF leftbreacaag=0 THEN Ldiagyr_=7000; ELSE IF leftbreacaag>0 and leftbreacayr in (8888,9999) THEN Ldiagyr_=8000; ELSE
+IF leftbreacaag>0 and leftbreacayr=0 THEN Ldiagyr_=8000; ELSE Ldiagyr_=leftbreacayr;
+/*월*/
+IF Ldiagyr_=7000 THEN Ldiagmo_=07; ELSE IF Ldiagyr_=8000 THEN Ldiagmo_=08; ELSE
+IF 0<Ldiagyr_<7000 and leftbreacamo in (0,88,99) THEN Ldiagmo_=08; ELSE  
+IF 0<Ldiagyr_<7000 and leftbreacamo='.' THEN Ldiagmo_=08; ELSE Ldiagmo_=leftbreacamo;
+/*일*/
+IF Ldiagyr_=7000 THEN Ldiagday_=07; ELSE IF  Ldiagyr_=8000 THEN Ldiagday_=08; ELSE
+IF 0<Ldiagyr_<7000 and leftbreacada in (0,88,99) THEN Ldiagday_=08; ELSE
+IF 0<Ldiagyr_<7000 and leftbreacada='.' THEN Ldiagday_=08; ELSE Ldiagday_=leftbreacada;
+Ldatediag=mdy(Ldiagmo_,Ldiagday_,Ldiagyr_); FORMAT Ldatediag yymmdd10.;
+/*첫 진단 날짜*/ 
+IF rblb in (1,3,5) THEN DateDiag1_=Rdatediag; ELSE IF rblb in (2,4) THEN DateDiag1_=Ldatediag; FORMAT DateDiag1_ yymmdd10.; 
+
+/*첫 진단 날짜가 없는 경우, 유방암 수술 날짜로 대체 하려고 했으나 없음 -> 최초 유전자 상담일로 대체함*/
+/*최초 유전자 상담일이 잘못되어있는 사람: id-21-1-M157 2009-09-24 -> 2009-06-24가 맞음*/
+IF id='21-1-M157' THEN gedate_=20090624; else gedate_=CRF_gedate; 
+gdate_1=input(put(gedate_,8.), YYMMDD8.); FORMAT gdate_1 YYMMDD10.; 
+IF Rdiagyr_ in (7000,8000) and Ldiagyr_ in (7000,8000) THEN DateDiag1=gdate_1; ELSE DateDiag1=DateDiag1_; FORMAT DateDiag1 YYMMDD10.; 
+
+/*진단일로부터 설문조사/입적일 차이계산*/
+diffdate=edate_1-DateDiag1; 
+KEEP id edate_1 rblb Rdatediag Ldatediag DateDiag1_ gdate_1 DateDiag1 diffdate; run;
+PROC SORT DATA=CASE_DATE; BY ID; RUN; PROC SORT DATA=TOTAL5; BY ID; RUN;
+DATA A.TOTAL1; MERGE TOTAL5 CASE_DATE; BY ID; 
+IF code=1 and (diffdate=<-10 or diffdate>=180) THEN delete; run;; /*2344->1860*/
+
+DATA WT1; SET A.TOTAL1; 
+/*유방암 가족력*/
+fhbrn1=fbreca1+fbreca2+fbreca3+fbreca4+fbreca5+fbreca6; 
+IF fhbrn1=0 THEN fhbrg1=0; ELSE IF fhbrn1=1 THEN fhbrg1=1; ELSE IF fhbrn1>1 THEN fhbrg1=2; 
+IF fhbrg1=0 THEN fhbrg2=0; ELSE IF fhbrg1 in (1,2) THEN fhbrg2=1;
+IF fhbrg1 in (0,1) THEN fhbrg3=0; ELSE IF fhbrg1 in (2) THEN fhbrg3=1;
+
+/*4그룹으로 나누어 분석: BRCA1, BRCA2, noncarriers with family history, noncarriers with early onset breast cancer*/
+IF brca=0 and fhbrg2=1 THEN brcax=1;  ELSE brcax=0; IF brca=0 and timef<40 THEN early=1; ELSE early=0;
+
+/*Gene expression, Subtypes*/
+IF erb2_IHC='' or erb2_IHC=0 THEN erb2_IHC=9; /*모름 미상 missing 합치기*/
+IF erb2_fish=1 THEN fish=0; ELSE fish=1; 
+IF erb2_IHC in (1,4)  THEN nher3=0; ELSE IF erb2_IHC=3 THEN nher3=1;/*positive*/ ELSE
+IF erb2_IHC=2 and fish=0 THEN nher3=0;ELSE IF erb2_IHC=2 and fish=1 THEN nher3=1; ELSE /*boarderline*/ nher3=9;
+
+IF er=2 or pgr=2 THEN erpgr=1; ELSE IF er=1 and pgr=1 THEN erpgr=0; ELSE IF code=0 THEN erpgr=9;ELSE erpgr=9999;
+IF nher3=1 THEN herp=1 ; ELSE IF nher3=0 THEN herp=0; ELSE IF code=0 THEN herp=9; ELSE  herp=9999; 
+
+IF code=0 THEN subnew=0; ELSE
+IF ((er=2 and pgr=2) and nher3=0) or ((er=2 and pgr=2) and (nher3=0 or ki67=1 or .<ki67_percent<14)) THEN   subnew=1; ELSE
+IF (er=2 and nher3=0 and ((ki67=2 or ki67_percent>=14) or pgr=1)) or (er=2 and nher3=1)  THEN subnew=2;  ELSE
+IF er=1 and pgr=1 and nher3=1 THEN subnew=3;ELSE
+IF er=1 and pgr=1 and nher3=0  THEN subnew=4 ;ELSE subnew=9999;
+/* Luminal A: 754 , luminal B: 314, HER2: 177, TNBC: 315, U/C: 348, Control: 256*/
+
+ /*time_f-age at diagnosis*/
+/*8 groups*/
+IF timef<25 THEN agenn1=1; ELSE 
+IF 25=<timef<30 THEN agenn1=2; ELSE 
+IF 30=<timef<35 THEN agenn1=3; ELSE 
+IF 35=<timef<40 THEN agenn1=4; ELSE 
+IF 40=<timef<45 THEN agenn1=5; ELSE 
+IF 45=<timef<50 THEN agenn1=6; ELSE 
+IF 50=<timef<55 THEN agenn1=7; ELSE 
+IF 55=<timef  THEN agenn1=8;
+
+IF agenn1=1 THEN py1=timef-20; ELSE 
+IF agenn1=2 THEN py1=timef-25; ELSE
+IF agenn1=3 THEN py1=timef-30; ELSE
+IF agenn1=4 THEN py1=timef-35; ELSE 
+IF agenn1=5 THEN py1=timef-40; ELSE
+IF agenn1=6 THEN py1=timef-45; ELSE 
+IF agenn1=7 THEN py1=timef-50; ELSE
+IF agenn1=8 THEN py1=timef-55;
+
+/*weight merge key*/
+IF erpgr in (1,9) THEN erpgr_1=1; IF erpgr in (0,9) THEN erpgr_0=0; 
+IF herp in (1,9) THEN herp_1=1; IF herp in (0,9) THEN herp_0=0;
+IF subnew in (0,1) THEN subt_1=1; IF subnew in (0,2) THEN subt_2=2; IF subnew in (0,4) THEN subt_3=3; 
+RUN; /*1860*/
+/*가중치 머지*/
+proc import out=A.WEIGHT1 datafile="G:\논문\#1\데이터\weight1_20180403" dbms=xlsx replace; run; /*total*/
+%macro weight2(wdata= ,odata=, final=);
+DATA w1; SET &wdata.; if ttw^=''; KEEP agenn1 braca012 code ttw; RUN; 
+PROC SORT DATA=w1; BY agenn1 braca012 code; PROC SORT DATA=&odata.; BY agenn1 braca012 code; RUN; 
+DATA o1; MERGE &odata. w1; BY agenn1 braca012 code; if id='' then delete; RUN;
+DATA w2; SET &wdata.; if hww_1^=''; KEEP agenn1 braca012 code erpgr_1 hww_1; RUN; 
+PROC SORT DATA=w2; BY agenn1 braca012 code erpgr_1; PROC SORT DATA=o1; BY agenn1 braca012 code erpgr_1; RUN; 
+DATA o2; MERGE o1 w2; BY agenn1 braca012 code erpgr_1;if id='' then delete;  RUN;
+DATA w3; SET &wdata.; if hww_0^=''; KEEP agenn1 braca012 code erpgr_0 hww_0; RUN; 
+PROC SORT DATA=w3; BY agenn1 braca012 code erpgr_0; PROC SORT DATA=o2; BY agenn1 braca012 code erpgr_0; RUN; 
+DATA o3; MERGE o2 w3; BY agenn1 braca012 code erpgr_0;if id='' then delete;  RUN;
+DATA w4; SET &wdata.; if heww_1^=''; KEEP agenn1 braca012 code herp_1 heww_1; RUN; 
+PROC SORT DATA=w4; BY agenn1 braca012 code herp_1; PROC SORT DATA=o3; BY agenn1 braca012 code herp_1; RUN; 
+DATA o4; MERGE o3 w4; BY agenn1 braca012 code herp_1;if id='' then delete;  RUN;
+DATA w5; SET &wdata.; if heww_0^=''; KEEP agenn1 braca012 code herp_0 heww_0; RUN; 
+PROC SORT DATA=w5; BY agenn1 braca012 code herp_0; PROC SORT DATA=o4; BY agenn1 braca012 code herp_0; RUN; 
+DATA o5; MERGE o4 w5; BY agenn1 braca012 code herp_0;if id='' then delete;  RUN;
+DATA w6; SET &wdata.; if subww1^=''; KEEP agenn1 braca012 code subt_1 subww1; RUN; 
+PROC SORT DATA=w6; BY agenn1 braca012 code subt_1; PROC SORT DATA=o5; BY agenn1 braca012 code subt_1; RUN; 
+DATA o6; MERGE o5 w6; BY agenn1 braca012 code subt_1;if id='' then delete;  RUN;
+DATA w7; SET &wdata.; if subww2^=''; KEEP agenn1 braca012 code subt_2 subww2; RUN; 
+PROC SORT DATA=w7; BY agenn1 braca012 code subt_2; PROC SORT DATA=o6; BY agenn1 braca012 code subt_2; RUN; 
+DATA o7; MERGE o6 w7; BY agenn1 braca012 code subt_2; if id='' then delete; RUN;
+DATA w8; SET &wdata.; if subww3^=''; KEEP agenn1 braca012 code subt_3 subww3; RUN; 
+PROC SORT DATA=w8; BY agenn1 braca012 code subt_3; PROC SORT DATA=o7; BY agenn1 braca012 code subt_3; RUN; 
+DATA &final.; MERGE o7 w8; BY agenn1 braca012 code subt_3;if id='' then delete;  RUN;
+%MEND;
+%weight2(wdata=A.WEIGHT1, odata=WT1, final=A.TOTALWT1)
+
+proc freq data=a.totalwt1; where brca=0; table brcax*code; run;
+proc freq data=a.totalwt1; where brca=0; table early*code; run;
+proc freq data=a.totalwt1; table braca012*code; run;
+
+DATA A.TOTALWT2; SET A.TOTALWT1; 
+/*DDS : 1주일에 한번이상 먹을 경우 점수를 부여하는 방식*/
+IF soynrice1<4 THEN soyrice_n=0; ELSE soyrice_n=1;
+IF soymilk_<4 THEN soymilk_n=0; ELSE soymilk_n=1; 
+IF soybean_<4 THEN soybean_n=0; ELSE soybean_n=1; 
+IF tofu_<4 THEN tofu_n=0; ELSE tofu_n=1; 
+IF soypa<4 THEN soypa_n=0; ELSE soypa_n=1; 
+totalsoy1=soyrice_n+soymilk_n+soybean_n+tofu_n+soypa_n;
+
+/*점수 4군으로 나눔*/
+IF totalsoy1 in (0,1) THEN Qtotalsoy1=1; ELSE IF totalsoy1=2 THEN qtotalsoy1=2; ELSE IF totalsoy1=3 THEN qtotalsoy1=3; ELSE 
+IF totalsoy1 in (4,5) THEN qtotalsoy1=4; 
+
+/*freq와 amount 계산*/
+/*콩밥-freq*/
+IF soynrice1 in (0,1) THEN soyrice2=0; ELSE IF soynrice1=2 THEN soyrice2=1/30; ELSE IF soynrice1=3 THEN soyrice2=2.5/30; ELSE IF soynrice1=4 THEN soyrice2=1.5/7;ELSE
+IF soynrice1=5 THEN soyrice2=3.5/7; ELSE IF soynrice1=6 THEN soyrice2=5.5/7; ELSE IF soynrice1=7 THEN soyrice2=1; ELSE IF soynrice1=8 THEN soyrice2=2; ELSE
+IF soynrice1=9 THEN soyrice2=3; 
+/*콩밥-amount*/
+IF F003_AM=0 THEN soyrice3=0;ELSE IF F003_AM=1 THEN soyrice3=0.5; ELSE IF f003_am=2 THEN soyrice3=1; ELSE IF f003_am=3 THEN soyrice3=1.5; ELSE soyrice3=9;
+IF soyrice2=0 and soyrice3=9 THEN soyrice4=0; ELSE IF soyrice3=9 and soyrice2=2 THEN soyrice4=1; ELSE soyrice4=soyrice3; 
+/*두유-freq*/
+IF soymilk_ in (0,1) THEN soymilk1=0; ELSE IF soymilk_=2 THEN soymilk1=1/30; ELSE IF soymilk_=3 THEN soymilk1=2.5/30; ELSE IF soymilk_=4 THEN soymilk1=1.5/7;ELSE
+IF soymilk_=5 THEN soymilk1=3.5/7; ELSE IF soymilk_=6 THEN soymilk1=5.5/7; ELSE IF soymilk_=7 THEN soymilk1=1; ELSE IF soymilk_=8 THEN soymilk1=2; ELSE
+IF soymilk_=9 THEN soymilk1=3; 
+/*두유-amount*/
+IF f088_AM=0 THEN soymilk2=0;ELSE IF f088_AM=1 THEN soymilk2=0.5; ELSE IF f088_am=2 THEN soymilk2=1; ELSE IF f088_am=3 THEN soymilk2=1.5; ELSE soymilk2=9;
+/*콩-freq*/
+IF soybean_ in (0,1) THEN soybean1=0; ELSE IF soybean_=2 THEN soybean1=1/30; ELSE IF soybean_=3 THEN soybean1=2.5/30; ELSE IF soybean_=4 THEN soybean1=1.5/7;ELSE
+IF soybean_=5 THEN soybean1=3.5/7; ELSE IF soybean_=6 THEN soybean1=5.5/7; ELSE IF soybean_=7 THEN soybean1=1; ELSE IF soybean_=8 THEN soybean1=2; ELSE
+IF soybean_=9 THEN soybean1=3;
+/*콩-amount*/ 
+IF f024_AM=0 THEN soybean2=0;ELSE IF f024_AM=1 THEN soybean2=0.5; ELSE IF f024_am=2 THEN soybean2=1; ELSE IF f024_am=3 THEN soybean2=1.5; ELSE soybean2=9;
+/*두부-freq*/
+IF tofu_ in (0,1) THEN tofu1=0; ELSE IF tofu_=2 THEN tofu1=1/30; ELSE IF tofu_=3 THEN tofu1=2.5/30; ELSE IF tofu_=4 THEN tofu1=1.5/7;ELSE
+IF tofu_=5 THEN tofu1=3.5/7; ELSE IF tofu_=6 THEN tofu1=5.5/7; ELSE IF tofu_=7 THEN tofu1=1; ELSE IF tofu_=8 THEN tofu1=2; ELSE
+IF tofu_=9 THEN tofu1=3; 
+/*두부-amount*/
+IF f027_AM=0 THEN tofu2=0;ELSE IF f027_AM=1 THEN tofu2=0.5; ELSE IF f027_am=2 THEN tofu2=1; ELSE IF f027_am=3 THEN tofu2=1.5; ELSE tofu2=9;
+/*된장국-freq*/
+IF soypa in (0,1) THEN soypa1=0; ELSE IF soypa=2 THEN soypa1=1/30; ELSE IF soypa=3 THEN soypa1=2.5/30; ELSE IF soypa=4 THEN soypa1=1.5/7;ELSE
+IF soypa=5 THEN soypa1=3.5/7; ELSE IF soypa=6 THEN soypa1=5.5/7; ELSE IF soypa=7 THEN soypa1=1; ELSE IF soypa=8 THEN soypa1=2; ELSE
+IF soypa=9 THEN soypa1=3; 
+/*된장국-amount*/
+IF f025_AM=0 THEN soypa2=0;ELSE IF f025_AM=1 THEN soypa2=0.5; ELSE IF f025_am=2 THEN soypa2=1; ELSE IF f025_am=3 THEN soypa2=1.5; ELSE soypa2=9;
+/*Freq*amount => 하루에 얼만큼 먹는 지 확인*/
+soyrice5=soyrice2*soyrice4;
+soymilk3=soymilk1*soymilk2;
+soybean3=soybean1*soybean2;
+tofu3=tofu1*tofu2;
+soypa3=soypa1*soypa2; 
+
+/*고광필교수님-isoflavone imputed data*/
+/*computed isoflavones concentration*/
+IF 0=<isofla_ko<5then iso101=1;ELSE IF 5=<isofla_ko<15.5 THEN iso101=2;ELSE IF 15.5=<isofla_ko THEN iso101=3;
+
+IF 0=<isofla_ko<4.5then fla1=1;ELSE IF 4.5=<isofla_ko<13.0 THEN fla1=2;ELSE IF 13.0=<isofla_ko THEN fla1=3;
+
+IF 0=<isofla_ko<4.5then fla2=1;ELSE IF 4.5=<isofla_ko<7.75then fla2=2;ELSE IF 7.75=<isofla_ko<13.0 THEN fla2=3; ELSE IF 13.0=<isofla_ko THEN fla2=4;
+
+/*나이 나누기*/
+IF age<45 THEN age1=0; ELSE IF age>=45 THEN age1=1; 
+/*학력->edu: 1. 중졸이하 2. 고등학교 중퇴 및 졸업 3. 대학재학 중 혹은 중퇴 4. 대학졸업 5. 대학원 재학 중퇴및 졸업*/
+IF edu=1 THEN edu19=0; ELSE IF edu=2 THEN edu19=1; ELSE IF edu in (3,4,5) THEN edu19=2; ELSE edu19=9; 
+/*9(missing인 대상자)를 edu가 9일 경우, 나이를 확인하여 40세 미만인 경우는 대학졸업(4)으로 넣었고, 40세 이상인경우는 고등학교졸업(2)으로 간주하였음.*/
+IF edu19=9 and age<40 THEN edu1=2; ELSE IF edu19=9 and age>=40 THEN edu1=1; ELSE edu1=edu19; 
+IF edu1 in (0,1) THEN edu2=0; ELSE edu2=1;
+
+/*결혼*/
+IF marry='' THEN marry=9; 
+IF marry=1 THEN marry19=0; /*미혼*/ ELSE IF marry in (2,3,4,5) THEN marry19=1; ELSE marry19=9; 
+IF marry=1 THEN marry1=0; /*미혼*/ ELSE IF marry in (2,3,4,5,9) THEN marry1=1; 
+IF marry=9 THEN marry_=2; ELSE marry_=marry; 
+IF marry_ in (3,4) THEN marry_1=3; ELSE IF marry_=5  THEN marry_1=4; ELSE marry_1=marry_;
+IF marry_=2 THEN marry_2=1;/*married*/ ELSE marry_2=0; /*others*/
+
+/*규칙적운동-> exer 1.아니오 2.예
+misisng(9)인 경우, 많은 대상자 (아니오-61.9% of total)으로 imputation함*/
+IF exer in (1,9) THEN exer1=0; ELSE IF exer=2 THEN exer1=1;  
+IF exer1=0 THEN exer2=0; ELSE IF exerfq=99 or exerdu=9999 THEN exer2=9999; ELSE 
+IF exer1=1 THEN exer2=exerfq*(exerdu/60);
+IF exer1=1 THEN exer3=round(exer2,0.1) ; ELSE exer3=exer2; 
+IF 0<exer3=<2.5 THEN exerg=1; ELSE IF 2.5<exer3<9999 THEN exerg=2; ELSE exerg=exer3; 
+IF 0<exer3=<3.5 THEN exerg1=1; ELSE IF 3.5<exer3<9999 THEN exerg1=2; ELSE exerg1=exer3; 
+IF 0<exer3=<1.5 THEN exerg2=1; ELSE IF 1.5<exer3<9999 THEN exerg2=2; ELSE exerg2=exer3; 
+IF 0<exer3=<2 THEN exerg3=1; ELSE IF 2<exer3<9999 THEN exerg3=2; ELSE exerg3=exer3; 
+
+/*흡연
+missing (9)인 경우(1명), 많은 대상자 (never smoker-90.3% of total)으로 imputation함*/
+IF smoke in (1,9) THEN smoke1=0;/*never smoker*/ ELSE IF smoke=2 THEN smoke1=1; /*nonsmoker*/ELSE IF smoke=3 THEN smoke1=2; /*smoker*/
+IF smoke in (1,9) THEN smoke2=0; /*never smoker*/ ELSE IF smoke in (2,3) THEN smoke2=1; /*ever smoker*/ 
+IF smoke in (1,9,2) THEN smoke3=0; /*no smoker*/ ELSE IF smoke in (3) THEN smoke3=1; /*yes smoker*/ 
+
+/*음주*/
+IF drink in (1,9) THEN drink1=0;/*never drinker*/ELSE IF drink=2 THEN drink1=1; /*nondrinker*/ ELSE IF drink=3 THEN drink1=2;/*drinker*/
+IF drink in (1,9) THEN drink2=0; /*never drinker*/ ELSE IF drink in (2,3) THEN drink2=1; /*ever drinker*/ 
+IF drink in (1,9,2) THEN drink3=0; /*no drinker*/ ELSE IF drink in (3) THEN drink3=1; /*yes drinker*/ 
+
+/*초경나이*/
+IF mnsag=<14 THEN menarag=0; ELSE IF 14<mnsag<999 THEN menarag=1; ELSE menarag=9999;
+IF menarag=9999 and mnsag1 in (1,2)  THEN mena1=0; ELSE IF menarag=9999 and mnsag1=3 THEN mena1=1; ELSE
+IF menarag=9999 and mnsag1=5 THEN mena1=9999; ELSE mena1=menarag;
+IF mena1=9999 THEN mena2=1; ELSE mena2=mena1; /*missing->평균에 넣었음*/
+IF mnsag=0 THEN mnsag_=14; ELSE mnsag_=mnsag; 
+/*폐경나이*/
+IF pmage in ('888','999') THEN meno_=9999; ELSE IF pmage=0 THEN meno_=0; ELSE meno_=timef-pmage;
+/*유방암에 걸리기전에 폐경에 걸린사람(92명중 코드 0인사람은 1명있음 -> 이들은 9999로 표시*/ 
+IF meno_=9999 THEN meno_age=9999; ELSE IF meno_<0 THEN meno_age=8888;ELSE meno_age=pmage; 
+/*menopausal status*/
+IF meno_age=0 THEN s_meno1=0; /*premenopausal */ELSE IF 0<meno_age<8888 THEN s_meno1=1; /*postmenopasual*/ELSE s_meno1=meno_age; 
+/*menopausal status-imputation*/
+IF meno_age=9999 and timef<40 THEN s_meno2=0; /*premeno*/ ELSE IF meno_age=9999 and timef>50 THEN s_meno2=1; /*postmenol*/ ELSE 
+IF meno_age=9999 and 40=<timef=<50 THEN s_meno2=9999; ELSE s_meno2=s_meno1; 
+/*meno_Age=8888 -> 진단 후에 폐경인 사람 -> 진단나이때에는 폐경 x*/ 
+IF s_meno2=8888 THEN s_meno3=0; ELSE s_meno3=s_meno2; 
+IF pmage=0 THEN meno=0; ELSE IF 0<pmage<888 THEN meno=1; ELSE meno=9; 
+IF pmage=0 THEN meno1=0; /*premenopause*/ ELSE IF 0<pmage<888 THEN meno1=1; ELSE IF pmage in ('888','999') and timef<45 THEN meno1=0; 
+/*1차년도 대상자는 폐경나이를 묻지 않은 대상자 & unknown대상자 중 진단/설문조사 나이가 45세 이하인 경우, premenopause*/ELSE
+IF pmage in ('888','999')  and timef>=45 THEN meno1=1; 
+/*1차년도 &unknown 대상자 진단/설문조사 당시 나이가 45세 이상인경우, post(peri)menopause*/ 
+/*premeno: 315 post(perimenopause):105 */
+IF meno1=0 THEN menog1=0; ELSE 
+IF meno1=1 and pmage<40 THEN menog1=1; ELSE IF meno1=1 and 40=<pmage<50 THEN menog1=2; ELSE IF meno1=1 and 50=<pmage<888 THEN menog1=3; ELSE 
+IF meno1=1 and pmage>=888 THEN menog1=9999; 
+
+IF meno1=0 THEN menog2=0; ELSE 
+IF meno1=1 and pmage<40 THEN menog2=1; ELSE IF meno1=1 and 40=<pmage<888 THEN menog2=2; ELSE IF meno1=1 and 888=<pmage THEN menog2=9999; 
+
+IF meno1=0 THEN menog3=0; ELSE 
+IF meno1=1 and pmage<50 THEN menog3=1; ELSE IF meno1=1 and 50=<pmage<888 THEN menog3=2; ELSE IF meno1=1 and 888=<pmage THEN menog3=9999; 
+/*임신*/
+IF preg in (0,1) THEN preg1=0;ELSE IF preg in (2,9) THEN preg1=1; 
+/*임신 나이*/
+IF preg1=1 and pregag in (0,888,999) THEN pregag1=9999; ELSE IF preg1=0 THEN pregag1=0; ELSE pregag1=pregag; 
+IF preg1=0 THEN preg11=0; ELSE 
+IF preg1=1 and pregag1=9999 THEN preg11=9999; ELSE 
+IF preg1=1 and pregag1<20 THEN preg11=1; ELSE 
+IF preg1=1 and 20=<pregag1<30 THEN preg11=2; ELSE
+IF preg1=1 and 30=<pregag1<9999 THEN preg11=3; 
+
+IF preg1=0 THEN preg12=0; ELSE 
+IF preg1=1 and pregag1=9999 THEN preg12=9999; ELSE 
+IF preg1=1 and pregag1<30 THEN preg12=1; ELSE
+IF preg1=1 and 30=<pregag1<9999 THEN preg12=2; 
+/*자녀수*/
+IF preg12=0 THEN childno1=0; ELSE 
+IF childno=0 THEN childno1=0; ELSE IF childno in (1,2) THEN childno1=1; ELSE IF childno in (3,4,5,6,7,8) THEN childno1=2; ELSE IF childno in (22,88,99) THEN childno1=9; 
+IF preg12=0 THEN childno2=0; ELSE 
+IF childno in (0,1) THEN childno2=0; ELSE IF childno in (2,3,4,5,6,7,8) THEN childno2=1; ELSE IF childno in (22,88,99) THEN childno2=9; 
+/*에너지 섭취량 s01*/
+IF s01=0 THEN kal=9999; ELSE kal=s01;
+IF s01<1000 or s01>3000 THEN kal1=9999; ELSE kal1=s01;
+/*BMI*/
+/*height 체크 - 999.99 2명 ; weight 체크 - 999.99 3명*/
+IF height>900 THEN height1=9999; ELSE height1=height/100; 
+IF weight>900 THEN weight1=9999; ELSE weight1=weight;
+IF weight1=9999 or height1=9999 THEN bmi=9999; ELSE	bmi= (weight/(height1*height1)); bmi=round(bmi,0.01);
+/*bmi category based on WHO-asian bmi classification*/
+IF bmi=9999 THEN bmi_c=9999; ELSE IF bmi<18.5 THEN bmi_c=0; ELSE IF 18.5<=bmi<23 THEN bmi_c=1; ELSE
+IF 23<=bmi<25 THEN bmi_c=2; ELSE IF 25=<bmi THEN bmi_c=3; 
+/*bmi 9999가 세명이니깐 정상으로 넣어주자*/
+IF bmi_c=9999 THEN bmi_mis=1; ELSE bmi_mis=bmi_c; 
+IF bmi=9999 THEN bmi_c2=9999; ELSE IF bmi<18.5 THEN bmi_c2=0; ELSE IF 18.5<=bmi<25 THEN bmi_c2=1; ELSE IF 25=<bmi THEN bmi_c2=2; 
+IF bmi_c in (0,1) THEN bmig=0; ELSE IF bmi_c in (2,3) THEN bmig=1; ELSE bmig=bmi_c; 
+IF bmi_c2 in (0,1) THEN bmig1=0; ELSE IF bmi_c2 in (2) THEN bmig1=1; ELSE bmig1=bmi_c2; 
+/*tamoxifen*/ 
+IF tamoxi in (0,1) THEN tamoxi1=0; ELSE IF tamoxi=2 THEN tamoxi1=1;
+/*birth cohort -grouping*/
+IF 1963>birthyr1 THEN bg27=1; ELSE IF 1963=<birthyr1<1972 THEN bg27=2; ELSE 
+IF 1972=<birthyr1<1979 THEN bg27=3; ELSE IF 1979=<birthyr1 THEN bg27=4; /*wow*/ 
+
+if 0=<isofla_ko<5then iso_1=1;else if 5=<isofla_ko<10then iso_1=2;else if 10=<isofla_ko<15 then iso_1=3;else if 15=<isofla_ko then iso_1=4;
+/*quartile*/
+if 0=<isofla_ko<5then iso_2=1;else if 5=<isofla_ko<8then iso_2=2;else if 8=<isofla_ko<13 then iso_2=3;else if 13=<isofla_ko then iso_2=4;
+if iso_2 in (1,2) then iso102=1; else if iso_2=3 then iso102=2; else if iso_2=4 then iso102=3; 
+
+if 0=<isofla_ko<8then iso103=1;else if 8=<isofla_ko<15.0then iso103=2;else if 15.0=<isofla_ko then iso103=3; 
+if 0=<isofla_ko<8then iso104=1;else if 8=<isofla_ko<15.5then iso104=2;else if 15.5=<isofla_ko then iso104=3; 
+RUN;
+%macro a1(data,brca,n,var);
+proc means data=&data; class code; where &brca=&n; var &var; run;
+%mend; 
+%a1(a.totalwt2,braca012,1,soyrice5) 
+%a1(a.totalwt2,braca012,1,soymilk3)
+%a1(a.totalwt2,braca012,1,soybean3)
+%a1(a.totalwt2,braca012,1,tofu3)
+%a1(a.totalwt2,braca012,1,soypa3)
+%a1(a.totalwt2,braca012,2,soyrice5)
+%a1(a.totalwt2,braca012,2,soymilk3)
+%a1(a.totalwt2,braca012,2,soybean3)
+%a1(a.totalwt2,braca012,2,tofu3)
+%a1(a.totalwt2,braca012,2,soypa3)
+%a1(a.totalwt2,braca012,1,qtotalsoy1)
+%a1(a.totalwt2,braca012,2,qtotalsoy1)
+%a1(a.totalwt2,braca012,1,isofla_ko)
+%a1(a.totalwt2,braca012,2,isofla_ko)
+ 	   
+%MACRO m1(odata=);
+data lumA; set &odata.; if subt_1=1; run; data lumB; set &odata.; if subt_2=2; run; data tnbc; set &odata.; if subt_3=3; run;
+data hormonp; set &odata.; if erpgr_1=1; run; data hormonn; set &odata.; if erpgr_0=0; run;
+data her2p; set &odata.; if herp_1=1; run; data her2n; set &odata.; if herp_0=0; run;
+%Mend; 
+%m1(odata=a.totalwt2) /*903, 529, 513, 1305, 682, 689, 1256*/
+
+
+/*TABLE 1*/
+%MACRO ttest(data,where,v1,brca);
+proc ttest data=&data; &where class code; var &v1; run;
+%MEND;
+/*age at study entry*/ 
+%ttest(a.totalwt2,where braca1=1;, age)
+%ttest(a.totalwt2,where braca2=1;, age)
+%ttest(a.totalwt2,where brcax=1;, age)
+%ttest(a.totalwt2,where early=1;, age)
+/*total energy intake*/
+%ttest(a.totalwt2,where braca1=1;,kal)
+%ttest(a.totalwt2,where braca2=1;,kal)
+%ttest(a.totalwt2,where brcax=1;,kal)
+%ttest(a.totalwt2,where early=1;,kal);
+proc ttest data=a.totalwt2; where braca1=1 and code=1; var timef; run;
+proc ttest data=a.totalwt2; where braca2=1 and code=1; var timef; run;
+proc ttest data=a.totalwt2; where brcax=1 and code=1; var timef; run;
+proc ttest data=a.totalwt2; where early=1 and code=1; var timef; run;
+%MACRO chi1(data,where,v1,v2,v3,v4,v5,v6,v7,v8,v9);
+proc freq data=&data; &where table (&v1 &v2 &v3 &v4 &v5 &v6 &v7 &v8 &v9 )*code/chisq; run;
+ %MEND;
+%chi1(a.totalwt2,where braca1=1;,edu2,marry_2,smoke2,drink2,exer1,fhovg1,mena2,meno1,preg1) 
+%chi1(a.totalwt2,where braca2=1;,edu2,marry_2,smoke2,drink2,exer1,fhovg1,mena2,meno1,preg1) 
+%chi1(a.totalwt2,where brcax=1;,edu2,marry_2,smoke2,drink2,exer1,fhovg1,mena2,meno1,preg1) 
+%chi1(a.totalwt2,where early=1;,edu2,marry_2,smoke2,drink2,exer1,fhovg1,mena2,meno1,preg1) 
+
+/*proc univariate data=&data; where &n=1; class &var; var timef; run;*/
+proc freq data=&data;where &n=1; table &var*code; run;	
+proc univariate data=&data; where &brca=1; class &var; var timef; run;
+proc freq data=&data; where &brca=1; table &var*code; run;
+%MACRO frq1(data= , group= , n= , var= );
+proc freq data=&data.;where &group.=&n.; table &var.*code; run;	
+proc univariate data=&data.; where &group.=&n.;  class &var.; var timef; run;
+%MEND;
+proc freq data=lumb; table early*code; run;
+%frq1(data=a.totalwt2, group=brcax, n=1, var=iso101)
+%frq1(data=a.totalwt2, group=early, n=1, var=iso101)
+%frq1(data=a.totalwt2, group=braca1, n=1, var=iso101)
+%frq1(data=a.totalwt2, group=braca2, n=1, var=iso101)
+
+%frq1(data=a.restwt1, group=brcax, n=1, var=iso101)
+%frq1(data=a.restwt1, group=early, n=1, var=iso101)
+%frq1(data=a.restwt1, group=braca1, n=1, var=iso101)
+%frq1(data=a.restwt1, group=braca2, n=1, var=iso101)
+
+%frq1(data=lumA, group=brcax, n=1, var=iso101)
+%frq1(data=lumA, group=early, n=1, var=iso101)
+%frq1(data=lumA, group=braca1, n=1, var=iso101)
+%frq1(data=lumA, group=braca2, n=1, var=iso101)
+
+%frq1(data=lumB, group=brcax, n=1, var=iso101)
+%frq1(data=lumB, group=early, n=1, var=iso101)
+%frq1(data=lumB, group=braca1, n=1, var=iso101)
+%frq1(data=lumB, group=braca2, n=1, var=iso101)
+
+%frq1(data=tnbc, group=brcax, n=1, var=iso101)
+%frq1(data=tnbc, group=early, n=1, var=iso101)
+%frq1(data=tnbc, group=braca1, n=1, var=iso101)
+%frq1(data=tnbc, group=braca2, n=1, var=iso101)
+
+%frq1(data=hormonp, group=brcax, n=1, var=iso101)
+%frq1(data=hormonp, group=early, n=1, var=iso101)
+%frq1(data=hormonp, group=braca1, n=1, var=iso101)
+%frq1(data=hormonp, group=braca2, n=1, var=iso101)
+
+%frq1(data=hormonn, group=brcax, n=1, var=iso101)
+%frq1(data=hormonn, group=early, n=1, var=iso101)
+%frq1(data=hormonn, group=braca1, n=1, var=iso101)
+%frq1(data=hormonn, group=braca2, n=1, var=iso101)
+
+%frq1(data=her2p, group=brcax, n=1, var=iso101)
+%frq1(data=her2p, group=early, n=1, var=iso101)
+%frq1(data=her2p, group=braca1, n=1, var=iso101)
+%frq1(data=her2p, group=braca2, n=1, var=iso101)
+
+%frq1(data=her2n, group=brcax, n=1, var=iso101)
+%frq1(data=her2n, group=early, n=1, var=iso101)
+%frq1(data=her2n, group=braca1, n=1, var=iso101)
+%frq1(data=her2n, group=braca2, n=1, var=iso101)
+
+/*WEIGHTED COX'S PROPORTIONAL HAZARDS MODEL*/
+%MACRO cox1(data= ,group= ,n= ,w= ,var= );	
+proc phreg data=&data. covsandwich(aggregate);where &group.=&n.; weight &w.; strata bg27; id f_pid; 
+class drink1(ref='0') marry_2(ref='0') preg1(ref='0') exer1(ref='0') fhovg1(ref='0')  &var.(ref='1')/param=ref;
+model timef*code(0)=&var. drink1 marry_2 preg1 exer1 fhovg1 kal/ rl; run;
+proc phreg data=&data. covsandwich(aggregate);where &group.=&n.;weight &w.; strata bg27; id f_pid; 
+class drink1(ref='0') marry_2(ref='0') preg1(ref='0') exer1(ref='0') fhovg1(ref='0') / param=ref;
+model timef*code(0)=&var. drink1 marry_2 preg1 exer1 kal  fhovg1/ rl; run; /*p-trend*/
+%MEND; 
+/*ovarian cancer 보정변수에서 제외했음*/
+%MACRO cox2(data= ,group= ,n= ,w= ,var= );	
+proc phreg data=&data. covsandwich(aggregate);where &group.=&n.; weight &w.; strata bg27; id f_pid; 
+class drink1(ref='0') marry_2(ref='0') preg1(ref='0') exer1(ref='0')   &var.(ref='1')/param=ref;
+model timef*code(0)=&var. drink1 marry_2 preg1 exer1 kal/ rl; run;
+proc phreg data=&data. covsandwich(aggregate);where &group.=&n.;weight &w.; strata bg27; id f_pid; 
+class drink1(ref='0') marry_2(ref='0') preg1(ref='0') exer1(ref='0') / param=ref;
+model timef*code(0)=&var. drink1 marry_2 preg1 exer1 kal / rl; run; /*p-trend*/
+%MEND; 
+%cox1(data=a.totalwt2, group=braca012, n=1, w=ttw, var=iso101)
+%cox1(data=a.totalwt2, group=braca012, n=2, w=ttw, var=iso101)
+%cox2(data=a.totalwt2, group=brcax, n=1, w=ttw, var=iso101)
+%cox2(data=a.totalwt2, group=early, n=1, w=ttw, var=iso101)
+
+%cox1(data=hormonp, group=braca012, n=1, w=hww_1, var=iso101)
+%cox1(data=hormonp, group=braca012, n=2, w=hww_1, var=iso101)
+%cox2(data=hormonp, group=brcax, n=1, w=hww_1, var=iso101)
+%cox2(data=hormonp, group=early, n=1, w=hww_1, var=iso101)
+
+%cox1(data=hormonn, group=braca012, n=1, w=hww_0, var=iso101)
+%cox1(data=hormonn, group=braca012, n=2, w=hww_0, var=iso101)
+%cox2(data=hormonn, group=brcax, n=1, w=hww_0, var=iso101)
+%cox2(data=hormonn, group=early, n=1, w=hww_0, var=iso101)
+
+%cox1(data=her2p, group=braca012, n=1, w=heww_1, var=iso101)
+%cox1(data=her2p, group=braca012, n=2, w=heww_1, var=iso101)
+%cox2(data=her2p, group=brcax, n=1, w=heww_1, var=iso101)
+%cox2(data=her2p, group=early, n=1, w=heww_1, var=iso101)
+
+%cox1(data=her2n, group=braca012, n=1, w=heww_0, var=iso101)
+%cox1(data=her2n, group=braca012, n=2, w=heww_0, var=iso101)
+%cox2(data=her2n, group=brcax, n=1, w=heww_0, var=iso101)
+%cox2(data=her2n, group=early, n=1, w=heww_0, var=iso101)
+
+%cox1(data=lumA, group=braca012, n=1, w=subww1, var=iso101)
+%cox1(data=lumA, group=braca012, n=2, w=subww1, var=iso101)
+%cox2(data=lumA, group=brcax, n=1, w=subww1, var=iso103)
+%cox2(data=lumA, group=early, n=1, w=subww1, var=iso101)
+
+%cox1(data=lumB, group=braca012, n=1, w=subww2, var=iso101)
+%cox1(data=lumB, group=braca012, n=2, w=subww2, var=iso101)
+%cox2(data=lumB, group=brcax, n=1, w=subww2, var=iso101)
+%cox2(data=lumB, group=early, n=1, w=subww2, var=iso101)
+
+%cox1(data=tnbc, group=braca012, n=1, w=subww3, var=iso101)
+%cox1(data=tnbc, group=braca012, n=2, w=subww3, var=iso101)
+%cox2(data=tnbc, group=brcax, n=1, w=subww3, var=iso101)
+%cox2(data=tnbc, group=early, n=1, w=subww3, var=iso101)
+
+proc freq data=a.totalwt2; where code=1; table braca012*iso104 brcax*iso104 early*iso104; run;
+proc freq data=hormonp; where code=1; table braca012*iso104 brcax*iso104 early*iso104; run;
+proc freq data=hormonn; where code=1; table braca012*iso104 brcax*iso104 early*iso104; run;
+proc freq data=her2p; where code=1; table braca012*iso104 brcax*iso104 early*iso104; run;
+proc freq data=her2n; where code=1; table braca012*iso104 brcax*iso104 early*iso104; run;
+proc freq data=luma; where code=1; table braca012*iso104 brcax*iso104 early*iso104; run;
+proc freq data=lumb; where code=1; table braca012*iso104 brcax*iso104 early*iso104; run;
+proc freq data=tnbc; where code=1; table braca012*iso104 brcax*iso104 early*iso104; run;
+
+/*version2 iso104*/
+%cox1(data=a.totalwt2, group=braca012, n=1, w=ttw, var=iso104)
+%cox1(data=a.totalwt2, group=braca012, n=2, w=ttw, var=iso104)
+%cox2(data=a.totalwt2, group=brcax, n=1, w=ttw, var=iso104)
+%cox2(data=a.totalwt2, group=early, n=1, w=ttw, var=iso104)
+
+%cox1(data=hormonp, group=braca012, n=1, w=hww_1, var=iso104)
+%cox1(data=hormonp, group=braca012, n=2, w=hww_1, var=iso104)
+%cox2(data=hormonp, group=brcax, n=1, w=hww_1, var=iso104)
+%cox2(data=hormonp, group=early, n=1, w=hww_1, var=iso104)
+
+%cox1(data=hormonn, group=braca012, n=1, w=hww_0, var=iso104)
+%cox1(data=hormonn, group=braca012, n=2, w=hww_0, var=iso104)
+%cox2(data=hormonn, group=brcax, n=1, w=hww_0, var=iso104)
+%cox2(data=hormonn, group=early, n=1, w=hww_0, var=iso104)
+
+%cox1(data=her2p, group=braca012, n=1, w=heww_1, var=iso104)
+%cox1(data=her2p, group=braca012, n=2, w=heww_1, var=iso104)
+%cox2(data=her2p, group=brcax, n=1, w=heww_1, var=iso104)
+%cox2(data=her2p, group=early, n=1, w=heww_1, var=iso104)
+
+%cox1(data=her2n, group=braca012, n=1, w=heww_0, var=iso104)
+%cox1(data=her2n, group=braca012, n=2, w=heww_0, var=iso104)
+%cox2(data=her2n, group=brcax, n=1, w=heww_0, var=iso104)
+%cox2(data=her2n, group=early, n=1, w=heww_0, var=iso104)
+
+%cox1(data=lumA, group=braca012, n=1, w=subww1, var=iso104)
+%cox1(data=lumA, group=braca012, n=2, w=subww1, var=iso104)
+%cox2(data=lumA, group=brcax, n=1, w=subww1, var=iso104)
+%cox2(data=lumA, group=early, n=1, w=subww1, var=iso104)
+
+%cox1(data=lumB, group=braca012, n=1, w=subww2, var=iso104)
+%cox1(data=lumB, group=braca012, n=2, w=subww2, var=iso104)
+%cox2(data=lumB, group=brcax, n=1, w=subww2, var=iso104)
+%cox2(data=lumB, group=early, n=1, w=subww2, var=iso104)
+
+%cox1(data=tnbc, group=braca012, n=1, w=subww3, var=iso104)
+%cox1(data=tnbc, group=braca012, n=2, w=subww3, var=iso104)
+%cox2(data=tnbc, group=brcax, n=1, w=subww3, var=iso104)
+%cox2(data=tnbc, group=early, n=1, w=subww3, var=iso104)
+
+/**HER-2 positive 중  BRCA 1carriers는 대상자수가 적어서 unajdusted로 분석함**/
+proc univariate data=e.herp; where braca1=1; class &var; var timef; run;
+proc freq data=e.herp; where braca1=1; table &var*code; run;
+proc phreg data=hormonp covs(aggregate);where braca1=1;id f_pid;strata bg27;weight hww_1;
+class iso101(ref='1')/ param=ref; model timef*code(0)=iso101/rl; run;
+proc phreg data=hormonp covs(aggregate); where braca1=1;id f_pid; strata bg27; weight hww_1;model timef*code(0)=iso101/rl;run; /*p-trend*/
+/**LUMINAL B & BRCA 1 CARRIERS*/
+proc phreg data=lumb covs(aggregate);where braca1=1;id f_pid;strata bg27;weight subww2;
+class iso101(ref='1')/ param=ref; model timef*code(0)=iso101/rl; run;
+proc phreg data=lumb covs(aggregate);where braca1=1;id f_pid;strata bg27;weight subww2; model timef*code(0)=iso101/rl; run;
+
+
+proc phreg data=hormonp covs(aggregate);where braca1=1;id f_pid;strata bg27;weight hww_1;
+class iso104(ref='1')/ param=ref; model timef*code(0)=iso104/rl; run;
+proc phreg data=hormonp covs(aggregate); where braca1=1;id f_pid; strata bg27; weight hww_1;model timef*code(0)=iso104/rl;run; /*p-trend*/
+proc phreg data=lumb covs(aggregate);where braca1=1;id f_pid;strata bg27;weight subww2;
+class iso104(ref='1')/ param=ref; model timef*code(0)=iso104/rl; run;
+proc phreg data=lumb covs(aggregate);where braca1=1;id f_pid;strata bg27;weight subww2; model timef*code(0)=iso104/rl; run;
+
+
+PROC FREQ DATA=a.totalwt2; where code=1 ; table iso104*brca; RUN;
+PROC FREQ DATA=hormonp; where code=1 ; table iso104*brca; RUN;
+PROC FREQ DATA=hormonn; where code=1 ; table iso104*brca; RUN;
+PROC FREQ DATA=her2p; where code=1 ; table iso104*brca; RUN;
+PROC FREQ DATA=her2n; where code=1 ; table iso104*brca; RUN;
+PROC FREQ DATA=luma; where code=1 ; table iso104*brca; RUN;
+PROC FREQ DATA=lumb; where code=1 ; table iso104*brca; RUN;
+PROC FREQ DATA=tnbc; where code=1 ; table iso104*brca; RUN;
+
+ /*CASE ONLY GENEXENVIRONMENT INTERACTION*/
+/*2. BRCA1*/
+%MACRO cor1(data);
+PROC LOGISTIC DATA=&data ; where code=1 ; 
+CLASS drink1(ref='0') marry_2(ref='0') preg1(ref='0') exer1(ref='0') brca(ref='0') iso104(ref='1') / PARAM=REF;
+MODEL brca=iso104 drink1 marry_2 preg1  exer1 kal /RL; RUN;
+PROC LOGISTIC DATA=&data ; where code=1;
+CLASS drink1(ref='0') marry_2(ref='0') preg1(ref='0') exer1(ref='0') brca(ref='0')/ PARAM=REF;
+MODEL brca=iso104 drink1 marry_2 preg1  exer1 kal /RL; RUN; 
+%MEND;
+%cor1(a.totalwt2)	
+%cor1(hormonp)
+%cor1(hormonn)
+%cor1(her2p)
+%cor1(her2n)
+%cor1(lumA)
+%cor1(lumB)
+%cor1(tnbc)
+
+PROC FREQ DATA=a.totalwt2; where code=1 and braca012 in (0,1); table iso104*brca; RUN;
+PROC FREQ DATA=a.totalwt2; where code=1 and braca012 in (0,2); table iso104*brca; RUN;
+PROC FREQ DATA=hormonp; where code=1 and braca012 in (0,1); table iso104*brca; RUN;
+PROC FREQ DATA=hormonp; where code=1 and braca012 in (0,2); table iso104*brca; RUN;
+PROC FREQ DATA=hormonn; where code=1 and braca012 in (0,1); table iso104*brca; RUN;
+PROC FREQ DATA=hormonn; where code=1 and braca012 in (0,2); table iso104*brca; RUN;
+PROC FREQ DATA=her2p; where code=1 and braca012 in (0,1); table iso104*brca; RUN;
+PROC FREQ DATA=her2p; where code=1 and braca012 in (0,2); table iso104*brca; RUN;
+PROC FREQ DATA=her2n; where code=1 and braca012 in (0,1); table iso104*brca; RUN;
+PROC FREQ DATA=her2n; where code=1 and braca012 in (0,2); table iso104*brca; RUN;
+PROC FREQ DATA=luma; where code=1 and braca012 in (0,1); table iso104*brca; RUN;
+PROC FREQ DATA=luma; where code=1 and braca012 in (0,2); table iso104*brca; RUN;
+PROC FREQ DATA=lumb; where code=1 and braca012 in (0,1); table iso104*brca; RUN;
+PROC FREQ DATA=lumb; where code=1 and braca012 in (0,2); table iso104*brca; RUN;
+PROC FREQ DATA=tnbc; where code=1 and braca012 in (0,1); table iso104*brca; RUN;
+PROC FREQ DATA=tnbc; where code=1 and braca012 in (0,2); table iso104*brca; RUN;
+
+/*3. BRCA1/2*/
+%MACRO cor2(data= , n=);
+proc freq data=&data.; where code=1 and braca012 in (0,&n.); table iso104*brca; run;
+proc logistic data=&data descending; ; where code=1 and braca012 in (0,&n.);
+class drink1(ref='0') marry_2(ref='0') preg1(ref='0')  exer1(ref='0') brca(ref='0') iso104(ref='1') / param=ref;
+model brca=iso104 drink1 marry_2 preg1  exer1 kal /rl; run;
+proc logistic data=&data descending; where code=1and braca012 in (0,&n.);
+class drink1(ref='0') marry_2(ref='0') preg1(ref='0')  exer1(ref='0') brca(ref='0')  / param=ref;
+model brca=iso104  drink1 marry_2 preg1  exer1 kal /rl; run;/*p-trend*/
+%MEND;
+%cor2(data=a.totalwt2, n=1)
+%cor2(data=a.totalwt2, n=2)
+
+%cor2(data=hormonp, n=1)
+%cor2(data=hormonp, n=2)
+%cor2(data=hormonn, n=1)
+%cor2(data=hormonn, n=2)
+
+%cor2(data=her2p, n=1)
+%cor2(data=her2p, n=2)
+%cor2(data=her2n, n=1)
+%cor2(data=her2n, n=2)
+
+%cor2(data=lumA, n=1) 
+%cor2(data=lumA, n=2)
+%cor2(data=lumB, n=1)/*CMH*/
+%cor2(data=lumB, n=2)
+%cor2(data=tnbc, n=1)
+%cor2(data=tnbc, n=2)/*CMH*/
+%MACRO cor3(data=, var= );
+proc logistic data=&data descending; ; where code=1 and braca012 in (1,2);
+class drink1(ref='0') marry_2(ref='0') preg1(ref='0')  exer1(ref='0') braca012(ref='1') &var.(ref='1') / param=ref;
+model braca012=&var. drink1 marry_2 preg1  exer1 kal /rl; run;
+%MEND;
+%cor3(data=a.totalwt2,var=iso101)
+%cor3(data=hormonp, var=iso101)
+%cor3(data=hormonn, var=iso101)
+%cor3(data=her2p, var=iso101)
+%cor3(data=her2n, var=iso101)
+%cor3(data=luma, var=iso101)
+%cor3(data=lumb, var=iso101)
+%cor3(data=tnbc, var=iso101)
+
+%cor3(data=a.totalwt2,var=iso104)
+%cor3(data=hormonp, var=iso104)
+%cor3(data=hormonn, var=iso104)
+%cor3(data=her2p, var=iso104)
+%cor3(data=her2n, var=iso104)
+%cor3(data=luma, var=iso104)
+%cor3(data=lumb, var=iso104)
+%cor3(data=tnbc, var=iso104)
+
+/*CMH logit estimate*/
+PROC FREQ DATA=lumb; where code=1 and braca012 in (0,1) and iso104 in (1,2); tables kal*drink1*marry_2*preg1*exer1*iso104*brca /chisq cmh noprint; run;
+PROC FREQ DATA=lumb; where code=1 and braca012 in (0,1) and iso104 in (1,3); tables drink1*marry_2*preg1*exer1*iso104*brca /chisq cmh noprint; run;
+
+PROC FREQ DATA=tnbc; where code=1 and braca012 in (0,2) and iso104 in (1,2); tables drink1*marry_2*preg1*exer1*iso104*brca /chisq cmh noprint; run;
+PROC FREQ DATA=tnbc; where code=1 and braca012 in (0,2) and iso104 in (1,3); tables drink1*marry_2*preg1*exer1*iso104*brca /chisq cmh noprint; run;
+
+
+
+
+/*vitamin*/
+
+
+
+
+
+
+/*SPLINE 그리기*/
+%macro lgtphcurv9(
+		data=,               /* the interested dataset */
+                adjdat=,            /* the dataset with 1 obs. for reference value of &adj */
+		hpct=, lpct=,      /* DELETE UPPER AND LOWER PERCENTILES */
+                hicut=,  lowcut=, /* or observations with EXPOSURE above HICUT or below LOWCUT */
+		where=,          /* use a smaller dataset to do analysis and plots */
+                extrav=,        /* variables to keep that aren't necessary for the model,
+				   but may be used for 'where' */  
+		model=LOGISTIC,/* logistic regression or not */ 
+                modopt=,       /* for proc phreg model option */ 
+                adj=,         /* adjusted variables list */   
+		exposure=,   /* interested continuous variable */
+		case=,      /* in logistic, case is the response, in phreg, case is the event */
+	        time=, andgill=F, agt1=, agt2=, strata=, /* for phreg only */
+		nk=,       /* nk: the total # of knots */
+		knot=,     /* knots list, if it's not empty, 
+                              that is the final knots #, even nk has value */
+            	select=1, /* for plot purpose: 
+                           1: use all spline var.s;
+		           2: use spline vars provided by user
+                           3: use vars. selected by automatic stepwise selection */
+		usersplv=,   /* spline vars. list provided by user, relevant if select=2 
+                              each var. should be the name of exposure followed by number 
+                              1, 2, ... min(nk-1, #knot-2) */
+
+                pwhich=SPLINE, /* spline or linear plot */  
+                sle=.05, sls=.05, /* relevant if select=3 */
+
+                printcv=F, /* whether to print variance-covariance matrix from spline model */
+                outplot=PS,   /*default format: ps file */
+             	pictname=&data..&exposure..&outplot,  
+                       /* output graph default name, but for html option, it is a path directory */
+
+		displayx=T,          /*3 values. T: smooth histgram, RUGPLOT, and F */
+                testrep=LONG,       /* if printed the detail model tests */
+		plot=2,            /* 1: proc plot only, 2: proc gplot only, 3: both */
+		refval=MIN,          /* can be: a reference value,
+                                    keyword in proc univariate: median, mean, mode, max
+                                    empty, which sets reference value to 0 */
+		axordv=,        /* vertical axis order for %95 CI plot */  
+                axordh=,       /* horizontal axis order for %95 CI plot*/
+                axvalfont=swiss, axvalmult=1,  /* font and multiplier for axis values  */
+                axordp=,      /* vertical axis order for pred. prob. plot */
+                axordi=,     /* vertical axis order for incidence rate plot */
+                axordvlog10=F, /* use log10 for vertical axis */
+		hlabel=,    /* horizontal label for x-axis */ 
+                vlabel=,   /* vertical label for y-axis for plot 95% CI*/  
+                axlabfont=swissb, axlabmult=1,  /* font and multiplier for axis label  */
+                vlabelstyle=v,   /* vertical axis running up side or horizontal */
+                vlabelp=, /* vertical label for y-axis for plot prob. */
+                vlabeli=,/* vertical label for y-axis for plot Inc */
+                horigin =1.5 , /* horizontal location of origin */
+
+		plotorrr=T, /* if 95% CI band plot should be plotted */
+                ci=2,    /* if plotorrr is T, there are 3 choices: 
+                            1: clouds for ci, 2: dotted line for ci, 0: no ci */ 
+                plotprob=F,  plotinc=F,   /* if pred. probability or 
+                                      incidence rate should be plotted */
+          
+		header1=, 
+                graphtit=,        /* graph title */ 
+                titlefont=swissb, titlemult=1,  /* font and multiplier for graph title */
+                footer=default,  /*  graph footer. default would be 'adj for ...'. If don't want 
+                                     footer, specify as NONE  */
+                footfont=swiss,  footmult=1,  /* font and multiplier for footnote */
+		klines=F,       /* whether to plot reference lines at the knot points */ 
+		plotdec=F,      /* whether to plot the decile cutoffs of the data on
+                                  the reference line (OR=1) */
+		cutoff=F,    /* if not F, it should look like: 1 * or 2 *: the second is
+                                 a value at which to truncate the vertical axis 
+                                 1: just truncate  95%CI upper limit 
+                                 2: truncate 95%CI upper limit and spline curve
+                                    i.e.,leave missing for splntran */
+
+                perleng=2,  pyunit=100000, /* relevant if plotting incidence rates
+                                              perleng: study period, pyunit: person-year unit */
+	        e=T,   /* log odds ratio or odds ratio */
+		ordata=,  or=,  or_lower=,  or_upper=,  x_value=,
+		groups=,
+                PLOTDATA=&DATA..&EXPOSURE..txt, FILEMODE=MOD, /* save to file */
+                plotprint=f,  /* whether to print the plotting points */
+               printpoints=, /* list of values of exposure for which to print the
+                               estimates and their 95% confidence bounds */
+               /* COMMTYPE=2, */
+		trun=0,  /* ?? */
+		n_grid=500,	bwm=1,  distmeth=srot, 	 /* used by %dist */
+		modprint=T, /* whether to print results of models */
+		range=, /* ?? */
+		k=1,  /* ?? */
+		notes=nonotes,  /* no notes */
+                id=
+                     );
+
+/* changing options for the macro run, but saving originals */
+%let _fdl = %sysfunc(getoption(formdlim));
+%let _nt = %sysfunc(getoption(notes));
+
+options &notes validvarname=upcase replace formdlim='=' nosyntaxcheck;
+options nodate nocenter nonumber ps=78 ls=80;
+
+*------------ make all parameters upper case -------------------------; 
+%let exposure = %upcase(&exposure);
+%let case     = %upcase(&case); 
+%let time     = %upcase(&time);
+%let pwhich   = %upcase(&pwhich);
+%let plotorrr  =  %upcase(&plotorrr);  
+%let plotprob=  %upcase(&plotprob);
+%let plotinc =  %upcase(&plotinc);
+%let   e     =  %upcase(&e);  
+%let andgill =  %upcase(&andgill);  
+%let displayx=  %upcase(&displayx);
+%let modprint=  %upcase(&modprint);  
+%let model   =  %upcase(&model);  
+%let klines  =  %upcase(&klines); 
+%let plotdec  =  %upcase(&plotdec);
+%let plotprint  =  %upcase(&plotprint);
+%let refval  =  %upcase(&refval);
+%let outplot =  %upcase(&outplot);
+%let axordvlog10 =  %upcase(&axordvlog10);
+%let vlabelstyle =  %upcase(&vlabelstyle);
+%let model   =  %UPCASE(&model);
+%*let noprint =  %UPCASE(&noprint);
+%let notes   =  %UPCASE(&notes);
+   
+%let nopred  =  0 ;
+%let noconv  =  0 ;
+
+%if %length(&hlabel) eq 0 %then %let hlabel=%upcase(&exposure);
+
+ /****** if using log scale, must exponentiate the curve ******/
+%if &axordvlog10 eq T %then %do;  %let e = T;  %end;
+   
+ /********** if using vlabelstyle=V, make horigin 1.5  *********/
+%if &vlabelstyle eq V and "&horigin" eq " " %then %do;  %let horigin=1.5;  %end;
+%if &vlabelstyle ne V and "&horigin" eq " " %then %do;  %let horigin=2;  %end;
+   
+ /* modify length of horizontal axis depending on horigin */
+data _null_;  horigin=&horigin;
+   hlength=7 - horigin;
+   call symput ('hlength', hlength);
+   run;
+   
+   
+  /****** per donna, 7-12-06, make default nk=21 if select=3 ***/
+  /****** revised 10-30-06 to be only if user does not give nk ***/
+  /* will still be overridden by specified knot points */
+%if %length(&nk) eq 0 %then %do;
+   %if &select eq 3 %then %let nk=21;
+   %else %let nk=4;
+%end;
+   
+   
+   *------------- get rid of space or other sysmbols -------;   
+%LET adj=%SCAN(&adj,1,'"'''); 
+%let usersplv=%SCAN(&usersplv,1,'"'''); 
+%LET range=%SCAN(&range,1,'"''');   
+%LET knot=%SCAN(&knot,1,'"''');
+%LET axordv=%SCAN(%QUOTE(&axordv),1,'"''');
+%LET axordh=%SCAN(%QUOTE(&axordh),1,'"''');
+%LET axordp=%SCAN(%QUOTE(&axordp),1,'"''');
+%LET axordi=%SCAN(%QUOTE(&axordi),1,'"''');
+%let outplot =%SCAN(%QUOTE(&outplot),1,'"'''); 
+   
+%IF &time ne   %THEN %LET model=COX;
+   
+%if "&vlabel" eq "" %then %do;
+   %if &model eq LOGISTIC or &model eq CONDLOG %then
+      %let vlabel = Odds Ratio for &case ;
+   %else %if &model eq COX %then %let vlabel = Relative Risk for &case ;
+%end;
+   
+%IF &model=COX %THEN %LET k=0;
+%IF &model=COX or %length(&adj) ne 0 %THEN %LET groups=;
+%IF %length(&knot) ne 0  %THEN %let nk= %sysfunc(countw(&knot, ' '));
+   
+%if "&outplot" eq "POSTSCRIPT" %then %let outplot=PS;
+   
+%if &plotinc eq T %then %let plotprob = T;
+%*if &plotinc eq T or &plotprob eq T %then %let plotorrr = F ;
+   
+%if %length(&adj) eq 0 %then %do;  %let num_adj = 0;  %end;
+%else %do;  %let num_adj = %sysfunc(countw(&adj));  %end; 
+   
+   
+%if &num_adj GT 0 and &model eq LOGISTIC and (&plotprob eq T or &plotinc eq T)
+  and %length(&adjdat) eq 0  %then %do;
+   data _null_;
+   put "WARN''ING: Since you have adjusters, you need to provide a data set in order to";
+   put "          calculate estimated probablity or incidence rate!";
+   file print;
+   put "WARN''ING: Since you have adjusters, you need to provide a data set in order to";
+   put "          calculate estimated probablity or incidence rate!";
+   run;   
+%end;
+%if &num_adj GT 0 and &model eq LOGISTIC and (&plotprob eq T or &plotinc eq T)
+  and %length(&adjdat) eq 0  %then %goto out1;
+   
+%local k2;
+%LET k2=%eval(&nk-2); /* total number of knots */
+   
+   
+   *------------- checking parameters --------------------;
+%GLOBAL tlevel; %IF &tlevel=  %THEN %LET tlevel=4;
+%GLOBAL _knot1_; %*Created by DASPLINE if needed;
+   
+%psplerr;
+   
+%if &misspar ne 0 %then %goto out1; 
+   
+%if "&graphtit" eq "" %then %do;
+   %if "&header1" ne "" %then %let graphtit= &header1;
+%end;
+%if "&header1" eq "" %then %do;
+   %if "&graphtit" ne "" %then  %let header1= &graphtit;
+   %else %let header1 = &case and &exposure;
+%end;
+   
+   *------------ make spline variables -------------------;
+   /* PRESERVE ORIGINAL DATASET by working on new data set */   
+data _m_;
+   set &data (keep=&exposure &case &time &adj &strata &extrav &agt1 &agt2);
+   x=&exposure;
+   %if "&where" ne "" %then %do;  where &where ;  %end;
+   if nmiss(of _numeric_)=0;
+   run;
+   
+   
+   /* DETERMINES THE DECILES OF THE DATA */
+   /* per donna's email to ellen, dated 3-31-00, this is done before any trimming */
+   
+%if &plotdec = T %then %do;
+   
+   proc univariate data=_m_ noprint;  var &exposure;
+   output out=pctile
+      pctlpts=0 10 20 30 40 50 60 70 80 90 100
+      pctlpre=p
+      pctlname=_00 _10 _20 _30 _40 _50 _60 _70 _80 _90 _100;
+   run;
+   
+   data pctile(keep=x);  set pctile;
+   array pct(11) p_00 p_10 p_20 p_30 p_40 p_50 p_60 p_70 p_80 p_90 p_100;
+   do i = 1 to 11;
+      x = pct(i);
+      output;
+      end; /** end of  do i = 1 to 11; **/
+   run;
+   
+%end;  /* end of %if &plotdec = T  */
+   
+   
+   /* DELETE UPPER AND LOWER PERCENTILES */
+   /* or observations with EXPOSURE above HICUT or below LOWCUT */
+   
+%if "&lpct" ne "" or "&hpct" ne "" or "&lowcut" ne "" or "&hicut" ne "" %then %do;
+   %if "&lpct"  ne ""   or "&hpct"  ne ""   %then %do;
+      proc univariate data=_m_ noprint;  var &exposure;
+      output out=pct
+	 pctlpts=
+	 %if &lpct  ne   %then &lpct;
+      %if &hpct  ne   %then &hpct;
+      pctlpre=p
+         pctlname=
+	 %if "&lpct"  ne ""   %then _low;
+      %if "&hpct"  ne ""   %then _high;
+      ;
+      run;
+      
+      data _null_;  set pct;
+      if _n_ = 1 then do;
+         %if "&lpct"  ne ""   %then %do;
+	    call symput("low", trim(p_low)); %end;
+         %if "&hpct"  ne ""   %then %do;
+            call symput("high", trim(p_high)); %end;   
+	 end;
+      run;
+   %end;  /* end of lpct ne or hpct ne */
+   
+   data _m_;  set _m_;
+      %if "&lpct"  ne ""  and "&hpct"  ne ""   %then %do;
+         if ^(&low <= &exposure <= &high) then delete; %end;
+      %else %if "&lpct"  ne ""   %then %do;
+         if ^(&low <= &exposure) then delete; %end;
+      %else %if "&hpct"  ne ""   %then %do;
+         if ^(&exposure <= &high) then delete;   %end;
+      %if "&lowcut" ne "" %then %do;
+         if &exposure lt &lowcut then delete;  %end;
+      %if "&hicut" ne "" %then %do;
+         if &exposure gt &hicut then delete;  %end;
+      run;
+   
+%end;   /* end of lpct, hpct, lowcut, or hicut ne */
+
+
+/* counting observations actually used. If it is too small, exit from the program */
+%numobs(_m_);
+data _null_;  numdat=&numobs;
+   call symput('numdat', numdat);
+   run;
+
+%if &numdat LT %eval(&num_adj + &nk) %then %do;
+ data _null_;
+  put @5"WARN''ING: After deleting all the missing values from the dataset,"; 
+  put @5"         the number of observations remaining in the dataset is too small to proceed. "; 
+  file print;
+  put @5"WARN''ING: After deleting all the missing values from the dataset,"; 
+  put @5"         the number of observations remaining in the dataset is too small to proceed. "; 
+   run;
+%end;   
+%if &numdat LT %eval(&num_adj + &nk) %then %goto out1;
+
+
+ /* DETERMINES IF THE DATA ARE TO BE CENTERED at a reference value */
+
+%if "&refval"  ne ""   %then %do;
+
+   %if "&refval" = "MEAN" or "&refval" = "MIN" or "&refval" = "MEDIAN"
+      or "&refval" = "MODE" or "&refval" eq "MAX" %then %do;
+      proc univariate data=_m_ noprint;  var &exposure;
+      output out=refval &refval=_refval_;
+      run;
+
+      data _null_;
+      set refval;
+      if _n_ = 1 then call symput("scale",left(trim(put(_refval_,20.8))));
+      run;
+      %end;
+
+   %else %do;
+      %let scale = &refval;
+      %let refval = USER VALUE;
+      %end;
+
+  %end;  /* end of %if &refval  ne  */
+%else %let scale = 0 ;
+
+
+/* making 'spline' variables */
+
+%global flag flagg; 
+
+%let flag=0;  
+%let flagg=0;
+
+%do i=1 %to &nk;  %global _m&i m&i;  %end;
+ods listing;
+%Lmakespl(data=_m_, splvbl=&exposure, nk=&nk, knot1=&knot, refval=&scale,
+	 outdat=_m1_, covar=&adj, adjdat=&adjdat, makepts=T, extrapoints=&printpoints);
+   
+ods listing close;   
+/* CHECK FOR UNIQUE KNOT POINTS */
+%if %eval(&flag) eq 1 %then %goto out1;
+%if %eval(&flagg) eq 1 %then %goto out1;
+
+/* _estpts_ is the 502 points with the last obs. contains reference values for spline var. */
+data _m1_ _tmp_ _estpts_;   set _m1_;
+   output _m1_;
+   if ^_ine_ then output _tmp_;
+   else output _estpts_;
+   run;
+   
+%if (&plotprob eq T or &plotinc eq T) and &num_adj GT 0 %then %do;
+   ods listing;
+   proc print data=&adjdat ;  var &adj;
+    title6 'levels of adjusting variables used in PLOTPROB or PLOTINC';
+   run;
+   title6;
+%end;
+
+      
+*------------ proc logistic ---------------------------------;
+ods listing close;
+
+%if &model = LOGISTIC %then %do;   
+
+/*L*/ /* note:  model without exposure of interest */
+/*L*/ %if %length(&adj) ne 0 %then %do;
+/*L*/  
+/*L*/      proc logistic descending  data= _tmp_  covout outest=_est2_(keep=_lnlike_);
+/*L*/        model &case=&adj;
+/*L*/        ods output convergencestatus=convstat2  fitstatistics=fitstat2 association = assoc2;
+/*L*/        /******* output datasets to print out to shorten the output if modprint eq T  ******/
+/*L*/        ods output ModelInfo=modelinfo2 
+/*L*/                   ParameterEstimates=beta2 OddsRatios=or2; 
+/*L*/       run;
+
+/*L*/ /* check for convergence of baseline model */
+/*L*/    data _null_ ;  set convstat2;  
+/*L*/    retain nonconv 0;
+/*L*/    if status ne 0 then nonconv=1;
+/*L*/    call symput('noconv', trim(left(nonconv)));
+/*L*/    run;
+%put &noconv;
+/*L*/    %if &noconv eq 1 %then %do;
+/*L*/       ods listing;
+/*L*/       data _null_;
+/*L*/       put "ERR""OR in macro run:  Baseline model with covariates &adj did not converge.";
+/*L*/       file print;
+/*L*/       put "ERR""OR in macro run:  Baseline model with covariates &adj did not converge.";
+/*L*/       run;
+/*L*/       ods listing close;
+/*L*/       %end;
+/*L*/  %if &noconv eq 1 %then %goto q1;
+/*L*/   
+
+/*L*/     data _null_;  set fitstat2;  
+/*L*/       where upcase(criterion) eq '-2 LOG L';
+/*L*/       ll2=interceptandcovariates;
+/*L*/       call symput('ll2', ll2);
+/*L*/       run;
+/*L*/    
+/*L*/  %q1:  %end; /* end of  %if %length(&adj) ne 0 */
+
+
+/*L*/    %if %length(&adj) eq 0 %then %do;  /* adj empty */
+/*L*/       proc logistic descending  data=  _tmp_  covout outest=_est2_(keep=_lnlike_);
+/*L*/       model &case= &adj &exposure;
+/*L*/      ods output convergencestatus=convstat2  fitstatistics=fitstat2  association = assoc2;  
+/*L*/      /******* simplified output if modprint eq T     **************/
+/*L*/      ods output ModelInfo=modelinfo2 /*ResponseProfile=responseprofile2 */
+/*L*/                 ParameterEstimates=beta2 OddsRatios=or2; 
+/*L*/      run;
+
+/*L*/ /* check for convergence of baseline model */
+
+/*L*/    data _null_ ;  set convstat2;  
+/*L*/    retain nonconv 0;
+/*L*/    if status ne 0 then nonconv=1;
+/*L*/    call symput('noconv', trim(left(nonconv)));
+/*L*/    run;
+
+/*L*/    %if &noconv eq 1 %then %do;
+/*L*/       ods listing;
+/*L*/       data _null_;
+/*L*/       put "ERR""OR in macro run:  Baseline model without covariates did not converge.";
+/*L*/       file print;
+/*L*/       put "ERR""OR in macro run:  Baseline model without covariates did not converge.";
+/*L*/       run;
+/*L*/      ods listing close;
+/*L*/       %end;
+/*L*/   
+/*L*/        %if &noconv eq 1 %then %goto q2;
+/*L*/       
+
+/*L*/       data _null_;  set fitstat2;  where upcase(criterion) eq '-2 LOG L';
+/*L*/       ll2=interceptonly;
+/*L*/       call symput('ll2', ll2);
+/*L*/       run;
+
+/*L*/       %q2:  %end; /* end of %else do-- adj empty*/
+/*L*/      %if &noconv eq 1 %then %goto ql;
+
+
+
+/*L*/ %if &modprint eq T %then %do;
+/*L*/   ods listing;
+/*L*/   options nodate nocenter nonumber ps=78 ls=80;
+/*L*/   
+/*L*/   data betaor2 (drop=DF WALDCHISQ);  set beta2;  
+/*L*/    ODDSRATIO=exp(ESTIMATE);
+/*L*/    LOWERCL=exp(ESTIMATE-1.96*STDERR);
+/*L*/    UPPERCL=exp(ESTIMATE+1.96*STDERR);
+/*L*/    run;
+/*L*/    
+/*L*/ proc print data=betaor2 noobs;
+/*L*/    title4 "   Analysis of Maximum Likelihood Estimates & Odds Ratio (with adjusters only)";
+/*L*/    run;
+/*L*/    
+
+/*L*/ data assoc2 (drop=NVALUE1 NVALUE2);  set assoc2;
+/*L*/   label LABEL1='measure' CVALUE1='value' 
+/*L*/         LABEL2='measure' CVALUE2='value'
+/*L*/      ;
+/*L*/   run;
+
+/*L*/ proc print data=assoc2 noobs label;
+/*L*/    title4 "Association of Predicted Probabilities and Observed Responses";
+/*L*/ run;
+
+/*L*/  ods listing close;
+/*L*/    
+/*L*/ %end;  /* end of modprint eq t */   
+
+
+/*L*/ **************************************************************************;
+/*L*/ ods listing close;
+/*L*/ /*2.  model with linear exposure */
+
+/*L*/       proc logistic descending  data=  _tmp_  
+/*L*/ 	 covout outest=_est1_(keep= &exposure &adj intercept _lnlike_ _name_ _type_);
+/*L*/    
+/*L*/       model &case = &adj &exposure;
+/*L*/       ods output convergencestatus=convstat1  fitstatistics=fitstat1 association=assoc1; 
+/*L*/      /******* simplified output if modprint eq T     **************/
+/*L*/      ods output ModelInfo=modelinfo1
+/*L*/                 ParameterEstimates=beta1 OddsRatios=or1; 
+/*L*/     run;
+
+/*L*/   /* check for convergence of linear model */
+
+/*L*/    data _null_ ;  set convstat1;  
+/*L*/    retain nonconv 0;
+/*L*/    if status ne 0 then nonconv=1;
+/*L*/    call symput('noconv', trim(left(nonconv)));
+/*L*/    run;
+
+/*L*/     %if &noconv eq 1 %then %do;
+/*L*/       ods listing;
+/*L*/       data _null_;
+/*L*/       put "ERR""OR in macro run:  linear model with covariates &adj &exposure did not converge.";
+/*L*/       file print;
+/*L*/       put "ERR""OR in macro run:  linear model with covariates &adj &exposure did not converge.";
+/*L*/       run;
+/*L*/       ods listing close; 
+/*L*/       %end;  /* end of noconv eq 1 */
+/*L*/       %if &noconv eq 1 %then %goto ql;
+
+/*L*/      data _null_;  set fitstat1;  
+/*L*/      where upcase(criterion) eq '-2 LOG L';
+/*L*/      ll1=interceptandcovariates;
+/*L*/      call symput('ll1', ll1);
+/*L*/      run;
+/*L*/      
+
+/*L*/ %if &modprint eq T %then %do;
+/*L*/   ods listing;
+/*L*/  
+/*L*/    options nodate nocenter nonumber ps=78 ls=80;
+/*L*/    data betaor1 (drop=DF WALDCHISQ);  set beta1;  
+/*L*/    ODDSRATIO=exp(ESTIMATE);
+/*L*/    LOWERCL=exp(ESTIMATE-1.96*STDERR);
+/*L*/    UPPERCL=exp(ESTIMATE+1.96*STDERR);
+/*L*/    run;
+
+/*L*/ proc print data=betaor1 noobs;
+/*L*/ %if %length(&adj) eq 0 %then %do;
+/*L*/ title4 "Analysis of Maximum Likelihood Estimates & Odds Ratio (linear model)";
+/*L*/ %end;
+/*L*/ %else %do;  /* length(adj) ne 0 */
+/*L*/ title4 "Analysis of Maximum Likelihood Estimates & Odds Ratios (linear model with adjusters)";
+/*L*/ %end;
+/*L*/ run;
+
+/*L*/ data assoc1 (drop=NVALUE1 NVALUE2);  set assoc1;
+/*L*/   label LABEL1='measure' CVALUE1='value' 
+/*L*/         LABEL2='measure' CVALUE2='value'
+/*L*/      ;
+/*L*/   run;
+/*L*/ proc print data=assoc1 noobs label;
+/*L*/    title4 "Association of Predicted Probabilities and Observed Responses";
+/*L*/ run;
+/*L*/  ods listing close;
+/*L*/    
+/*L*/ %end;   /* end of modprint=t */
+
+
+
+/*L*/ *****************************************************;
+/*L*/ /* model with splines  */
+/*L*/ /* for selection=1,2,3: get the final covariates besides adjusted */
+/*L*/    
+/*L*/ %local splnvarlist; 
+/*L*/    %let splnvarlist= ;
+/*L*/     %do i=1 %to &k2;
+/*L*/       %let splnvarlist=&splnvarlist &&exposure.&i;
+/*L*/     %end; 
+
+/*L*/ %global finalnowin;
+
+/*L*/ /* if uses all spline variables */
+/*L*/ %if &select eq 1 %then %let nowin=&splnvarlist;
+/*L*/ /* if needs automatic stepwise selection */ 
+/*L*/  %else %if &select eq 3 %then
+/*L*/    %lstep8(data = _tmp_, nowout= &splnvarlist, adj=&adj, _pin=&sle, _pout=&sls, case=&case,  
+/*L*/            incl=&exposure, maxstep=10, notes=&notes, called=1);
+
+/*L*/  /* if just uses the spline variables user provides */
+/*L*/       %else %if &select eq 2 %then %let nowin=&usersplv;
+
+/*L*/ %let finalnowin=&exposure &nowin;   
+/*L*/ %let newk2=%sysfunc(countw(&finalnowin));   
+
+/*L*/    ods listing close;
+/*L*/    proc logistic descending  data=  _tmp_  
+/*L*/    covout outest=_est0_(keep=&finalnowin &adj intercept  _lnlike_  _name_ _type_);
+/*L*/    model &case= &adj &finalnowin;
+
+/*L*/    ods output convergencestatus=convstat0  fitstatistics=fitstat0 Association=assoc0;
+/*L*/      /******* output datasets to print out to shorten the output if modprint eq T     ********/
+/*L*/      ods output ModelInfo=modelinfo0 /* ResponseProfile=responseprofile0  */
+/*L*/                 ParameterEstimates=beta0 OddsRatios=or0; 
+ /*L*/      run;
+   
+/*L*/    %let kmid=%eval((&k+1)/2);     /*use middle intercept for ordinal logistic*/
+
+/*L*/ /* check for convergence of spline model */
+
+
+/*L*/    data _null_ ;   set convstat0;  
+/*L*/    retain nonconv 0;
+/*L*/    if status ne 0 then nonconv=1;
+/*L*/    call symput('noconv', trim(left(nonconv)));
+/*L*/    run;
+
+/*L*/    %if &noconv eq 1 %then %do;
+/*L*/       ods listing;
+/*L*/       data _null_;
+/*L*/       put "ERR""OR in macro run:  spline model with variables &adj &finalnowin  did not converge.";
+/*L*/       file print;
+/*L*/       put "ERR""OR in macro run:  spline model with variables &adj &finalnowin  did not converge.";
+/*L*/       run;
+/*L*/       ods listing close;
+/*L*/       %end;
+/*L*/       %if &noconv eq 1 %then %goto ql;
+
+/*L*/ data _null_;  set fitstat0;  
+/*L*/    where upcase(criterion) eq '-2 LOG L';
+/*L*/    ll0=interceptandcovariates;
+/*L*/    call symput('ll0', ll0);
+/*L*/    run;
+
+/*L*/ proc freq data=_tmp_ noprint;  tables &case / out=responseprofile0;  run;
+/*L*/ data _null_;  set responseprofile0;
+/*L*/    if &case eq 1 then  call symput('eventnumber', left(trim(Count)));
+/*L*/    else if &case ne 1 then call symput('noneventnumber', left(trim(Count)));
+/*L*/    run;
+/*L*/   
+
+/*L*/ %if &modprint eq T  and &newk2 gt 1 %then %do;
+/*L*/    ods listing;
+/*L*/    options nodate nocenter nonumber ps=78 ls=80;
+/*L*/  
+/*L*/   data betaor0 (drop=DF WALDCHISQ);  set beta0;  
+/*L*/    ODDSRATIO=exp(ESTIMATE);
+/*L*/    LOWERCL=exp(ESTIMATE-1.96*STDERR);
+/*L*/    UPPERCL=exp(ESTIMATE+1.96*STDERR);
+/*L*/    run;
+/*L*/    
+/*L*/ proc print data=betaor0 noobs;
+/*L*/    %if %length(&adj) eq 0 %then %do;
+/*L*/    title4 "Analysis of Maximum Likelihood Estimates & Odds Ratio (spline model)";
+/*L*/    %end;
+/*L*/    %else %do;
+/*L*/    title4 "Analysis of Maximum Likelihood Estimates & Odds Ratio (spline model with adjusters)";
+/*L*/    %end;
+/*L*/ run;   
+/*L*/   
+/*L*/ data assoc0 (drop=NVALUE1 NVALUE2);  set assoc0;
+/*L*/   label LABEL1='measure' CVALUE1='value' 
+/*L*/         LABEL2='measure' CVALUE2='value'
+/*L*/      ;
+/*L*/   run;
+/*L*/    
+/*L*/ proc print data=assoc0 noobs label;
+/*L*/       title4 "Association of Predicted Probabilities and Observed Responses";
+/*L*/    run;
+/*L*/    
+/*L*/  ods listing close;
+/*L*/ %end;  /* end of modprint eq t and newk2 gt 1 */   
+
+%ql:
+%end; /* end of if &model=logistic */
+%if &noconv eq 1 %then %goto quit;
+
+
+/*----------------- for phreg ----------------------------------*/
+
+%if &model eq COX or &model eq CONDLOG %then %do;
+/*PH*/    
+/*PH*/ ods listing close;
+/*PH*/    
+/*PH*/ /* note:  model without exposure of interest */
+/*PH*/ %if %length(&adj) ne 0 %then %do;
+/*PH*/    /* model with only adjusters */
+/*PH*/   proc phreg  data=_tmp_ 
+   /* %if "&strata" ne "" %then %do;  nosummary  %end; */
+/*PH*/     covout  outest=_est2_(keep=_lnlike_);
+/*PH*/    %if &andgill eq T and &agt1 ne and &agt2 ne %then %do;
+/*PH*/       model (&agt1, &agt2) * &case(0) =
+/*PH*/          %end;
+/*PH*/    %else %do;
+/*PH*/       model &time * &case (0) = 
+/*PH*/          %end;
+/*PH*/    &adj %if "&modopt" ne "" %then / &modopt;;
+
+/*PH*/    %if "&strata" ne "" %then %do;  strata &strata; %end;
+/*PH*/  ods output convergencestatus=convstat2  fitstatistics=fitstat2;  
+/*PH*/  ods output ParameterEstimates=beta2 (drop=DF CHISQ);
+/*PH*/  run;
+/*PH*/  
+/*PH*/ /* check for convergence of baseline model */
+/*PH*/    data _null_ ;  set convstat2;  
+/*PH*/    retain nonconv 0;
+/*PH*/    if status ne 0 then nonconv=1;
+/*PH*/    call symput('noconv', trim(left(nonconv)));
+/*PH*/    run;
+
+/*PH*/    %if &noconv eq 1 %then %do;
+/*PH*/       ods listing;
+/*PH*/       data _null_;
+/*PH*/       put "ERR""OR in macro run:  baseline model with covariates &adj did not converge.";
+/*PH*/       file print;
+/*PH*/       put "ERR""OR in macro run:  baseline model with covariates &adj did not converge.";
+/*PH*/       run;
+/*PH*/      ods listing close;
+ /*PH*/       %end;
+/*PH*/       %if &noconv eq 1 %then %goto q3;
+ /*PH*/   
+   
+ /*PH*/     data _null_;  set fitstat2;  
+ /*PH*/       where upcase(criterion) eq '-2 LOG L';
+ /*PH*/       ll2=withcovariates;
+ /*PH*/       call symput('ll2', ll2);
+ /*PH*/       run;
+ /*PH*/    
+ /*PH*/       %q3:  %end; /* end of  %if %length(&adj) ne 0 */
+/*PH*/        %if &noconv eq 1 %then %goto qp;
+   
+   
+ /*PH*/    %if %length(&adj) eq 0 %then  %do;  /* adj empty */
+ /*PH*/    
+    
+ /*PH*/   proc phreg   data=_tmp_ /* %if "&strata" ne "" %then %do;  nosummary  %end; */
+ /*PH*/          covout  outest=_est2_(keep=_lnlike_);
+ /*PH*/    %if &andgill eq T and &agt1 ne and &agt2 ne %then %do;
+ /*PH*/       model (&agt1, &agt2) * &case(0) =
+ /*PH*/          %end;
+ /*PH*/    %else %do;
+ /*PH*/       model &time * &case (0) =
+ /*PH*/          %end;
+ /*PH*/    &exposure %if "&modopt" ne "" %then / &modopt;;
+ /*PH*/    %if "&strata" ne "" %then %do;  strata &strata;  %end;
+ /*PH*/   ods output convergencestatus=convstat2  fitstatistics=fitstat2;
+ /*PH*/   ods output ParameterEstimates=beta2 (drop=DF CHISQ);
+ /*PH*/   run;
+/*PH*/    
+	/*PH*/ /* check for convergence of baseline model */
+    
+ /*PH*/    data _null_ ;  set convstat2;  
+/*PH*/     retain nonconv 0;
+ /*PH*/    if status ne 0 then nonconv=1;
+ /*PH*/    call symput('noconv', trim(left(nonconv)));
+ /*PH*/    run;
+    
+ /*PH*/    %if &noconv eq 1 %then %do;
+ /*PH*/       ods listing;
+ /*PH*/       data _null_;
+ /*PH*/       put "Baseline model without covariates did not converge.";
+ /*PH*/       file print;
+ /*PH*/       put "Baseline model without covariates did not converge.";
+ /*PH*/       run;
+ /*PH*/       ods listing close;
+ /*PH*/       %end;
+ /*PH*/       %if &noconv eq 1 %then %goto q4;
+    
+ /*PH*/       data _null_;  set fitstat2;  where upcase(criterion) eq '-2 LOG L';
+ /*PH*/       ll2=withoutcovariates;
+ /*PH*/       call symput('ll2', ll2);
+ /*PH*/       run;
+    
+ /*PH*/       %q4:  %end; /* end of %else do-- adj empty*/
+/*PH*/  %if &noconv eq 1 %then %goto qp;
+   
+ /*PH*/    
+ /*PH*/ %if &modprint eq T %then %do;
+ /*PH*/   ods listing;
+    
+ /*PH*/    options nodate nocenter nonumber;
+ /*PH*/    proc print data=beta2 noobs;   
+ /*PH*/    title4 '   Analysis of Maximum Likelihood Estimates (with adjusters only)';
+ /*PH*/    run;
+ /*PH*/    ods listing close;
+ /*PH*/    run;
+ /*PH*/ %end;  /* end of modprint eq t */   
+   
+ /*PH*/ *==========================================================================;
+ /*PH*/ 									      
+ /*PH*/  /* note:  linear model */
+ /*PH*/    ods listing close;
+ /*PH*/    
+ /*PH*/ proc phreg   data=_tmp_ covout  /* %if "&strata" ne "" %then %do;  nosummary  %end; */
+ /*PH*/      outest=_est1_(keep= &exposure &adj _lnlike_ _name_ _type_);
+ /*PH*/    %if &andgill eq T and &agt1 ne and &agt2 ne %then %do;
+ /*PH*/       model (&agt1, &agt2) * &case(0) =
+ /*PH*/          %end;
+ /*PH*/    %else %do;
+ /*PH*/       model &time * &case (0) =
+ /*PH*/          %end;
+ /*PH*/     &adj &exposure %if "&modopt" ne "" %then / &modopt;;
+ /*PH*/    %if "&strata" ne "" %then %do;  strata &strata;  %end;
+ /*PH*/    ods output convergencestatus=convstat1 fitstatistics=fitstat1; 
+ /*PH*/    ods output ParameterEstimates=beta1(drop=DF CHISQ);
+ /*PH*/     run;
+   
+	  /*PH*/   /* check for convergence of linear model */
+   
+ /*PH*/    data _null_ ;  set convstat1;  
+/*PH*/     retain nonconv 0;
+ /*PH*/    if status ne 0 then nonconv=1;
+ /*PH*/    call symput('noconv', trim(left(nonconv)));
+ /*PH*/    run;
+   
+ /*PH*/     %if &noconv eq 1 %then %do;
+ /*PH*/       ods listing;
+ /*PH*/       data _null_;
+ /*PH*/       put "ERR""OR in macro run:  linear model with covariates &adj &exposure did not converge.";
+ /*PH*/       file print;
+ /*PH*/       put "ERR""OR in macro run:  linear model with covariates &adj &exposure did not converge.";
+ /*PH*/       run;
+ /*PH*/       ods listing close;
+ /*PH*/       %end;
+ /*PH*/        %if &noconv eq 1 %then %goto qp;
+   
+ /*PH*/      data _null_;  set fitstat1;  
+ /*PH*/      where upcase(criterion) eq '-2 LOG L';
+ /*PH*/      ll1=withcovariates;
+ /*PH*/      call symput('ll1', ll1);
+ /*PH*/      run;
+ /*PH*/      
+ /*PH*/ %if &modprint eq T %then %do;
+ /*PH*/   ods listing;
+    
+ /*PH*/    options nodate nocenter nonumber;
+ /*PH*/    proc print data=beta1  noobs;   
+ /*PH*/    %if %length(&adj) eq 0 %then %do;
+ /*PH*/    title4 'Analysis of Maximum Likelihood Estimates (linear model)';
+ /*PH*/    %end;
+ /*PH*/    %else %do;
+ /*PH*/    title4 'Analysis of Maximum Likelihood Estimates (linear model with adjusters)';
+ /*PH*/    %end;
+ /*PH*/    run;
+ /*PH*/    ods listing close;
+ /*PH*/    run;  /* why is this here?*/
+ /*PH*/ %end;  /* end of modprint=t */   
+   
+ /*PH*/ *===========================================================================;
+ /*PH*/    
+ /*PH*/ /* for selection=1,2,3: get the final covariates besides adjusted */   
+ /*PH*/ %local splnvarlist; 
+ /*PH*/    %let splnvarlist= ;
+ /*PH*/     %do i=1 %to &k2;
+ /*PH*/       %let splnvarlist=&splnvarlist &&exposure.&i;
+ /*PH*/     %end; 
+   
+ /*PH*/ %global finalnowin;
+ /*PH*/    
+ /*PH*/ ods listing close;
+ /*PH*/ /* if uses all spline variables */
+ /*PH*/ %if &select eq 1 %then %let nowin=&splnvarlist;
+ /*PH*/ /* if needs automatic stepwise selection */ 
+ /*PH*/  %else %if &select eq 3 %then
+    
+ /*PH*/   %pstep8(data=_tmp_, nowout= &splnvarlist, _pin=&sle, _pout=&sls, notes=&notes, adj=&adj,
+		  strata=&strata,  maxstep=10, agt1=&agt1, agt2=&agt2,  andgill=&andgill,
+ /*PH*/            incl=&exposure, event=&case, time=&time, printcv=&printcv, modopt=&modopt,
+                   called=1);
+ /*PH*/  /* if just uses the spline variables user provides */
+ /*PH*/       %else %if &select eq 2 %then %let nowin=&usersplv;
+ /*PH*/  
+   
+ /*PH*/ %let finalnowin=&exposure &nowin;   
+ /*PH*/ %let newk2=%sysfunc(countw(&finalnowin));   
+   
+ /*PH*/ ods listing close;
+ /*PH*/   proc phreg data= _tmp_ covout  /* %if "&strata" ne "" %then %do;  nosummary  %end; */
+ /*PH*/      outest=_est0_(keep=&finalnowin &adj  _lnlike_  _name_ _type_);
+ /*PH*/    %if &andgill eq T and &agt1 ne and &agt2 ne %then %do;
+ /*PH*/       model (&agt1, &agt2) * &case(0) =
+ /*PH*/          %end;
+ /*PH*/    %else %do;
+ /*PH*/       model &time * &case (0) =
+ /*PH*/          %end;
+ /*PH*/    &adj &finalnowin  %if "&modopt" ne "" %then / &modopt;;
+ /*PH*/    %if "&strata" ne "" %then %do;  strata &strata;  %end;
+ /*PH*/    ods output convergencestatus=convstat0  fitstatistics=fitstat0 
+ /*PH*/               CensoredSummary=censor0 ParameterEstimates=beta0(drop=DF CHISQ);
+ /*PH*/    run;
+   /*PH*/
+   
+ /*PH*/    %let kmid=%eval((&k+1)/2);     /*use middle intercept for ordinal logistic*/
+   
+ /*PH*/ /* check for convergence of spline model */
+   
+ /*PH*/    data _null_ ;  set convstat0;  
+/*PH*/     retain nonconv 0;
+ /*PH*/    if status ne 0 then nonconv=1;
+ /*PH*/    call symput('noconv', trim(left(nonconv)));
+ /*PH*/    run;
+   
+ /*PH*/    %if &noconv eq 1 %then %do;
+ /*PH*/       ods listing;
+ /*PH*/       data _null_;
+ /*PH*/       put "ERR""OR in macro run:  spline model with variables &adj &finalnowin  did not converge.";
+ /*PH*/       file print;
+ /*PH*/       put "ERR""OR in macro run:  spline model with variables &adj &finalnowin  did not converge.";
+ /*PH*/       run; 
+ /*PH*/       ods listing close;
+ /*PH*/       %end;
+ /*PH*/       %if &noconv eq 1 %then %goto qp;
+ /*PH*/    
+   
+ /*PH*/ data _null_;  set fitstat0;  
+ /*PH*/    where upcase(criterion) eq '-2 LOG L';
+ /*PH*/    ll0=withcovariates;
+ /*PH*/    call symput('ll0', ll0);
+ /*PH*/    run;
+   
+ /*PH*/    data _null_;  set censor0;
+ /*PH*/    call symput('noneventnumber', trim(left(Censored)));
+ /*PH*/    call symput('eventnumber', trim(left(Event)));
+ /*PH*/    run;
+ /*PH*/    
+ /*PH*/ %if &modprint eq T and &newk2 gt 1 %then %do;
+ /*PH*/   ods listing;
+ /*PH*/    options nodate nocenter nonumber;
+ /*PH*/    proc print data=beta0 noobs;   
+ /*PH*/    %if %length(&adj) eq 0 %then %do;
+ /*PH*/    title4 'Analysis of Maximum Likelihood Estimates (spline model)';
+ /*PH*/    %end;
+ /*PH*/    %else %do;
+ /*PH*/    title4 'Analysis of Maximum Likelihood Estimates (spline model with adjusters)';
+ /*PH*/    %end;
+ /*PH*/    run;
+ /*PH*/   
+ /*PH*/    proc print data=_est0_;
+ /*PH*/    
+ /*PH*/    ods listing close;
+ /*PH*/    
+ /*PH*/    run;  /* why is this here? */
+ /*PH*/ %end;  /* end of modprint eq 1 and newk2 gt 1 */ 
+   
+%qp:  %end;  /* end of model=cox */   
+%if &noconv eq 1 %then %goto quit;
+   *--------------------------------------------------------------;
+   
+ /* the total number of spline variables, including the exposure itself 
+  is the df. between spline model and baseline model */
+   
+%*let newk2=%sysfunc(countw(&finalnowin));   
+%let newkk2=&newk2; /** this is newly added to compromise for pwhich=linear **/
+   ods listing;   
+%if &newk2=1 %then %do;
+   data _null_;
+   put @1 "NOTE: No spline variables are selected by the current criteria.";
+   put @7 "You can either change the parameter values for sls, sle or nk, or";
+   put @7 "bear in mind the only valid test is the linear test.";
+   put @7 "The graph output should be the linear graph.";
+   
+   file print;
+   put @1  "NOTE: No spline variables are selected by the current criteria.";
+   put @7 "You can either change the paramter values for sls, sle or nk, or";
+   put @7 "bear in mind the only valid test is the linear test.";
+   put @7 "The graph output will be the linear graph.";
+   run;
+%let pwhich=LINEAR;
+%end;
+   
+   
+data _est_;   
+   set
+      %if %upcase(&pwhich) = SPLINE %then _est0_;
+   %else %if %upcase(&pwhich) = LINEAR %then _est1_;
+   ;
+   run;
+   
+   
+%if %upcase(&pwhich) = LINEAR %then %do;
+   %let finalnowin=&exposure;
+   %let newkk2=1;
+%end;
+   
+ /* to get the _adj1, _adj2... list */
+%lgrpargs(arg=&adj,prefix=adj,ngroup=5)
+   
+ /*   ll0: spline model   (adj+exposure+finalnowin);
+     ll1: linear model   (adj + exposure) ;
+     ll2: baseline model (just adj) 
+     */
+   
+   
+   ods listing;
+title4;
+data _null_;
+   ll0=&ll0;  ll1=&ll1;  ll2=&ll2;
+   ll01=abs(ll1-ll0);  ll02=abs(ll2-ll0);  ll12=abs(ll1-ll2);
+   %if &newk2 >1 %then %do;
+      p01=round(1-probchi(ll01, %eval(&newk2-1)), .0001);
+      p02=round(1-probchi(ll02, &newk2), .0001);
+      %end;
+   
+   %else %do;
+      p01=.;  
+      p02=.;  
+      %end;
+   
+   p12=round(1-probchi(ll12, 1), .0001);
+   format p01 p02 p12 pvalue6.4 ;
+   hiend=&hiend;  lowend=&lowend;
+   eventnumber=&eventnumber;
+   noneventnumber=&noneventnumber;
+   numdat=&numdat;
+   
+   file print ;
+   %if "&header1" ne ""  %then %do;
+      put @5 "%quote(&header1)" ;
+      %end;
+   
+   %if &model = LOGISTIC %then %do;
+      put @5 "PROC LOGISTIC";
+      %end;
+   
+   %else %do;
+      put @5 "PROC PHREG    ";
+      %if %length(&strata) ne 0 %then %do;  
+	 put @5 "Conditioned on &strata";  %end;
+      %end;
+   
+   put @5 "Data set:  %upcase(&data), with " numdat 'observations';
+   
+   
+   %if &model eq LOGISTIC %then %do;
+      put @5 "Outcome variable name:  &case, with " eventnumber 'events and '
+         noneventnumber 'non-events';
+      %end;
+   
+   %else %do;
+      %if "&andgill" eq "F" %then %do;
+	 put @5 "Time variable name:  &time";
+	 put @5 "Censoring variable name:  &case with " eventnumber 'events and '
+	    noneventnumber 'censored';
+	 %end;
+      
+      %if "&andgill" eq "T" %then %do;
+	 put @5 'Anderson-Gill data structure.';
+	 put @10 "Time variable names:   &agt1  &agt2";
+	 put @10 "Censoring variable name:  &case with " eventnumber 'events and '
+	    noneventnumber 'censored';
+	 %end;
+      
+      %end;  /* end of model ne logistic */
+   
+   
+   put @5 "Exposure of interest: &hlabel";
+   put @5 "Exposure variable name: &exposure "; 
+   put @5 'Range of exposure in data used:  '  lowend ' to ' hiend ; 
+   %if &adj  ne   %then %do;
+      put @5 "Adjusted for:"; 
+      %do j=0 %to %eval(&_kl_adj-1); 
+	 put "          &&_adj&j"; 
+	 %end;      
+      %end;
+   %else %do;
+      put @5 'Not adjusted';
+      %end;
+   
+   
+   put "    ";
+   put @5 "Reference value is  &refval:  &scale" ;
+   
+   
+   put @5"Number of knots: &nk";
+%if &select eq 1 %then %do;
+   put @5 "You chose to use all &k2 spline variables: &nowin";
+%end;
+   
+%else %if &select eq 2 %then  %do;
+   %if &usersplv eq %then %do;
+      put @5 "You chose not to use any spline variables";
+      %end; 
+   %else %do;  
+      put @5 "You  chose to use these spline variables: &usersplv";
+      %end;
+   %end;
+   
+   
+%else %if &select eq 3 %then  %do;
+   put @5 "You chose to select spline variables automatically, with sls=&sls and sle=&sle.";
+   
+   %if &newk2=2 %then %do;
+      put @5 "The following spline variable was selected:";
+      put @10 "&nowin";
+      
+      %end;
+   
+   %else %if &newk2>2 %then %do;
+      put @5 "The following spline variables were selected:";
+      put @10 "&nowin";
+      
+      %end;
+   
+   %else %do;
+      put @5 "No spline variable is selected by the current criteria";
+      
+      %end;
+   
+   %end;  /* end of select eq 3 */
+   
+   
+   put " ";
+   
+   %if &plot ne 0 %then %do;
+      put @5 "Name of graph file:  &pictname";
+      *put @5 "Graph option:  &pwhich";
+      put " ";
+      %end;
+   
+   put @5 "Model w/o exposure of interest, -2 Log Likelihood: " ll2 ;
+   put @5 "                  Linear Model, -2 Log Likelihood: " ll1 ;
+   %if &newk2>1 %then %do;
+      put @5 "                  Spline Model, -2 Log Likelihood: " ll0 ;
+      %end;  
+   %else %do;
+      put @5 "There is no spline model available (no spline var.)";
+      %end;
+   
+   put ' ';
+   put ' ';
+   
+   
+   %if "&testrep" eq "LONG" %then %do;
+      
+      put @5 "Line Test Name     Description                       P value ";
+      put @5 '-------------------------------------------------------------';
+      put ' ';
+      put @5 '1    Test for      If the P value is small, the';
+      put @5 '     curvature     relationship between the ';
+      put @5 '   (i.e. non-      exposure and the outcome, if any, ';
+      put @5 '    linear         is non-linear.';
+      put @5 '    relation)      SEE LINE 2.';
+      put @5 '                   If the P value is large, the';
+      put @5 '                   relationship between the';
+      put @5 '                   exposure and the outcome, if any';
+      put @5 '                   is linear';
+      put @5 '                   SEE LINE 3.                     '  ;
+      put @5 '                   If the P value is missing, the' ;
+      put @5 '                   automatic selection procedure did' ;
+      put @5 '                   not select any spline variables.' ;
+      put @5 '                   The relationship between the expo-' ;
+      put @5 '                   sure and the outcome, if any, is' ;
+      put @5 '                   linear.  SEE LINE 3.              '    p01;
+      put @5 '-------------------------------------------------------------';
+      put @5 '2    Test for      If LINE 1 indicated a possible';
+      put @5 '     overall sig-  non-linear relation between the';
+      put @5 '     nificance     exposure and the outcome,';
+      put @5 '     of the curve  use this P value for the relation of';
+      put @5 '                   the EXPOSURE to the CASE or TIME. '    p02;
+      put @5 '-------------------------------------------------------------';
+      put @5 '3    Test for      If LINE 1 indicated a possible';
+      put @5 '     linear        linear relation between the';
+      put @5 '     relation      exposure and the outcome,';
+      put @5 '                   use this P value AND rerun your';
+      put @5 '                   model with the parameter';
+      put @5 '                   PWHICH=LINEAR, to get the graph';
+      put @5 '                   corresponding to the model of ';
+      put @5 '                   interest (if you intend to use';
+      put @5 '                   the graph).                       '    p12;    
+      %end;     
+   
+%else %do; /* if &testrep ne LONG */
+   put @5 "Line Test Name                                       P value ";
+   put @5 '-------------------------------------------------------------';
+   put ' ';
+   put @5 '1    Test for curvature (i.e. non-linear relation) '    p01;
+   put @5 '2    Test for overall significance of curve        '    p02;
+   put @5 '3    Test for linear relation                      '    p12 ;
+   put ' ';
+%end;
+   
+%if &select eq 3 and (p02=. or p01=.)  %then %do;
+   put ' ';   
+   put @5 "NOTE:  If the p-value is missing in Line 1 and Line 2, use the linear";
+   put @5 '      relation, because the automatic selection procedure did not';
+   put @5 '      select any non-linear terms.';
+   put ' ';  
+   %end; 
+   run;
+   
+proc datasets nolist;
+   delete _tmp_ _m1_;
+   run;
+
+   
+   
+   **------------ Begin graph preparation -------------------------------------;   
+   
+%if &plot ne 0 %then %do;
+   ods listing;
+   
+   %if &model eq LOGISTIC %then %do;
+      *proc print data=_est_;
+      
+      proc IML;
+      use _estpts_;
+      read all var {&finalnowin } into origX1;
+      k=nrow(origX1);
+      
+     %if &num_adj ne 0  and (&plotinc eq T or &plotprob eq T) %then %do; /*ERROR 1 */
+	 read all var {&adj} into adj;
+	 X=J(k,1,1)||adj||origX1;
+	 %end;
+      
+      %else %do;
+	 X=J(k,1,1)||origX1;
+	 %end;
+      read all var {_inp_} into _inp_;
+      close _estpts_;   
+
+      /* _est_ from model with &adj &finalnowin order in the model **/
+      use _est_;
+      read all var {_name_} into cvname where  (_TYPE_ = "COV" & _NAME_=:"&exposure");
+      read all var {&finalnowin} into cv11 where  (_TYPE_ = "COV" &  _NAME_=:"&exposure");
+      
+      *newk2=&newk2;
+      newk2=&newkk2;
+      r=nrow(cv11);
+      
+      *print "r is" r;
+      *print "newk2 newkk2: &newk2 &newkk2";   
+      cv1=cv11[( r-newk2+1):r, ];
+               /* to get rid of any possible similar adjuster names starting with &exposure like */
+
+
+%if &num_adj ne 0 and (&plotinc eq T or &plotprob eq T) %then %do; /** ERROR 2 **/
+
+   read all var {INTERCEPT &adj &finalnowin} into cv  where  (_TYPE_ = "COV");
+   read all var {INTERCEPT &adj &finalnowin} into beta  where (_TYPE_ = "PARMS");
+%end;
+      
+%else  %do; 
+   read all var {INTERCEPT &finalnowin} into cv  
+      where  (_TYPE_ = "COV" &  (_NAME_=:"&exposure" | _name_="INTERCEPT"));
+   read all var {INTERCEPT &finalnowin} into beta  where (_TYPE_ = "PARMS");
+%end;
+      
+      read all var {&finalnowin} into beta1  where (_TYPE_ = "PARMS");
+      
+      close _est_;
+      
+
+      if %upcase("&printcv") = "T" then do;
+	 mattrib cv1 label=' '  format=6.4  rowname=(cvname) colname=(cvname);
+	 print "The variance-covariance matrix among all spline variables is:" , cv1;
+	 end;
+      
+    /* the last row is the reference value */
+    /** for plot or/rr */
+      X1=origX1-repeat(origX1[k,],k);
+      
+    /**just var-covar matrix of exposure & its spline var.s **/ 
+      se1= sqrt(vecdiag(X1*cv1*X1`));
+      spln=x1*beta1`;   
+      l95spln=spln - 1.96*se1;
+      u95spln=spln + 1.96*se1;
+
+
+
+/*ERROR NOTE to self add and (&plotinc eq T or &plotprob eq T) */      
+    /*  for plotprob eq T  */
+      xbeta =x*beta`;
+      se=sqrt(vecdiag(x*cv*x`));      
+      lower =xbeta   - 1.96*se;
+      upper =xbeta   + 1.96*se;    
+      prob=exp(xbeta)/(1+exp(xbeta));
+      l95prob=exp(lower)/(1+exp(lower));
+      u95prob=exp(upper)/(1+exp(upper));
+      
+      final=origX1||spln||l95spln||u95spln||prob||l95prob||u95prob||_inp_;
+      
+      create _tmp_ from final [colname={&finalnowin splntran lower upper prob LOWERPRB UPPERPRB _inp_}];
+      append from final;
+      close _tmp_;   
+      
+      free /;
+      quit;
+      run;
+      
+    /**
+     proc print data=_tmp_;  var &finalnowin prob lowerprb upperprb;  run;   
+     
+     data j.fromiml;  set _tmp_;  keep &finalnowin  prob lowerprb upperprb;  run;   
+     **/
+%end;  /* end of iml for logistic models */
+   
+%else %do;  /* for phreg models */
+   
+/*
+proc contents data=_estpts_;  run;
+*/
+   
+proc IML;
+   
+   use _estpts_;
+   read all var {&finalnowin} into origX1;
+%if %length(&adjdat) ne 0 %then %do;
+   %if &num_adj ne 0 %then %do;
+      read all var {&adj} into adj;
+   %end;
+%end;
+   read all var {_inp_} into _inp_;
+   
+   close _estpts_;   
+   
+   k=nrow(origX1);
+   
+   use _est_;
+   read all var {_name_} into cvname where  (_TYPE_ = "COV" & _NAME_=:"&exposure");
+   read all var {&finalnowin} into cv11     where  (_TYPE_ = "COV" &  _NAME_=:"&exposure");
+   read all var {&finalnowin} into beta1  where (_TYPE_ = "PARMS");
+   *read all var {&finalnowin &adj} into beta  where (_TYPE_ = "PARMS");
+   %if %length(&adjdat) ne 0 and &num_adj ne 0 %then %do;
+      X=origX1||adj;
+   %end;
+   %else %do;  X=origX1 ;  %end;
+   close _est_;
+   
+ /** need to test **/
+   *newk2=&newk2;
+   newk2=&newkk2;
+   r=nrow(cv11);
+   
+   r=nrow(cv11);
+   cv=cv11[( r-newk2+1):r, ];
+        /* to get rid of any possible similar adjuster names starting with &exposure like */
+   
+   if %upcase("&printcv") = "T" then do;
+      mattrib cv label=' '  format=6.4  rowname=(cvname) colname=(cvname);
+      print "The variance-covariance matrix among all spline variables is:" , cv;
+      end;
+   
+ /* the last row is the reference value */
+   X1=origX1-repeat(origX1[k,],k);
+   se1= sqrt(vecdiag(X1*cv*X1`));
+   spln=x1*beta1`;   
+   l95spln=spln - 1.96*se1;
+   u95spln=spln + 1.96*se1;
+   final=origX1||spln||l95spln||u95spln||_inp_;
+   
+   create _tmp_ from final [colname={&finalnowin splntran lower upper _inp_}];
+   append from final;
+   close _tmp_;   
+   
+   free /;
+   quit; 
+   run;
+   
+ /**  
+  proc print data=_tmp_;  var &finalnowin  lower upper;  run;   
+  **/
+   
+%end;  /* end of iml for phreg models */
+*--------------------------------------------------------------------------------------------------;
+/**
+ proc print data=_tmp_;  title4 "tmp dataset is:";  run;
+ **/   
+
+   
+data _tmp_;  set _tmp_;
+   %if  &plotprob eq T %then %do;
+      perleng=&perleng;
+      pyunit=&pyunit;
+      inc=pyunit*prob/perleng;
+      lowerinc=pyunit*lowerprb/perleng;
+      upperinc=pyunit*upperprb/perleng;
+      label prob="Probability per period"
+	 inc ="Incidence per &pyunit person-years"
+	 lowerprb='Probability per period'
+	 upperprb='Probability per period'
+	 lowerinc ="Incidence per %eval(&pyunit/&perleng)  person-years"
+	 upperinc ="Incidence per %eval(&pyunit/&perleng) person-years"
+	 ;
+      %end ;  /* end of LOGISTIC and PLOTPROB eq T */
+   
+   %if "&e" eq "T" %then %do;
+      splntran = exp(splntran);
+      if lower  ne  . then lower = exp(lower);
+      if upper  ne  . then upper = exp(upper);
+      %end;  /* end of e=T */
+   
+ /* if cutoff exists, then there are two possibilities: 
+  (1) begin with number 1, then just set the value of upper larger than the second 
+  value of cutoff, but don't have limits for Xbeta, i.e., spltran
+  (2) for both 
+      */
+   %if &cutoff  ne  F %then %do;
+      %if %scan(&cutoff,1,%str( )) = 1 %then %do;
+	 *if upper > %scan(&cutoff,2,%str( )) then upper = %scan(&cutoff,2,%str( ));
+	 if upper > %scan(&cutoff,2,%str( )) then upper =.;
+	 %end;
+      %if %scan(&cutoff,1,%str( )) = 2 %then %do;
+	 *if upper > %scan(&cutoff,2,%str( )) then upper = %scan(&cutoff,2,%str( ));
+	 if upper > %scan(&cutoff,2,%str( )) then upper =.;
+	 if splntran > %scan(&cutoff,2,%str( )) then splntran =. ;
+	 %end;
+      %end;  /* end of cutoff ne F */
+   run;
+   
+proc sort data=_tmp_;  by &exposure;  run;
+   
+%if %length(&printpoints) ne 0 %then %do;
+   title2 'values for points requested by user as PRINTPOINTS';
+   data _pp_;  set _tmp_;
+   where _inp_ eq 1;
+   run;
+   proc print noobs data=_pp_;
+      %if &plotorrr eq T %then %do;  var &exposure splntran lower upper;  %end;
+      %if &plotprob eq T %then %do;  var &exposure prob lowerprb upperprb;  %end;
+      %if &plotinc eq T %then %do;  var &exposure inc lowerinc upperinc;  %end;
+      run;
+%end;
+   
+   *-------------- sets up graphics options -------------------------;
+   
+ /* formerly if plot ne 0 then do */
+   
+   %if "&displayx"  ne  "F" %then %do;
+      data display;  set _m_(keep=&exposure);  run;
+      
+      ods listing close; 
+      %dist(data=display, vbl=&exposure, ng=&n_grid, bwm=&bwm, distmeth=&distmeth, notes=&notes);
+      %end;  /* end of displayx ne F */
+   
+   
+   /********************************/
+   %IF &plot=1 | &plot=3 %THEN %DO;
+   /********************************/
+   
+      ods listing;
+   
+      /********** not plotting probability ***************/
+      %if &plotorrr eq T %then %do;
+         PROC PLOT data=_tmp_;
+         PLOT splntran*&exposure="o" lower*&exposure="." upper*&exposure="."
+	    %IF &groups ne   %THEN logit*&exposure="X";
+         /OVERLAY 
+	    %if &klines eq T %then %do;
+	       HREF= %do i=1 %to &nk;  &&m&i  %end;
+	       %end;
+         %IF %QUOTE(&axordv) ne   %THEN %DO;
+	 VAXIS=&axordv
+	    %END;
+         %IF %QUOTE(&axordh) ne   %THEN %DO;
+	 HAXIS=&axordh
+	    %END;
+         ;
+         LABEL splntran="Spline Transformation";
+         run;  /* should this run be here? */
+         %end;  /* end of plotorrr eq T */
+   
+   /**************** plotting probability *****************/
+   %IF  &plotprob eq T   %THEN %DO;
+   %if &plotinc ne T %then %do;
+      proc plot data=_tmp_;
+      PLOT prob*&exposure="o" lowerprb*&exposure="." upperprb*&exposure="."
+	 %IF &groups ne   %THEN &case*&exposure="X";
+      /OVERLAY 
+	 %if &klines eq T %then %do;
+	    HREF= %do i=1 %to &nk;  &&m&i  %end;
+	    /* lhref=34 */
+	    %end;
+      VAXIS=&axordp
+	 %IF %QUOTE(&axordh) ne   %THEN HAXIS=&axordh; ;
+      LABEL prob=
+	 %IF &k=1 %THEN "Probability of &case"; %ELSE "Prob(&case>=&kmid)"; ;
+      run;
+      %end;  /* end of plotinc ne T */
+   
+   %if &plotinc eq T %then %do;
+      proc plot data=_tmp_;
+      PLOT inc*&exposure="o" lowerinc*&exposure="." upperinc*&exposure="."
+	 %IF &groups ne   %THEN &case*&exposure="X";
+      /OVERLAY
+	 %if &klines eq T %then %do;
+	    HREF= %do i=1 %to &nk;  &&m&i  %end;
+	    %end;
+      %IF %QUOTE(&axordp) ne   %THEN %do; VAXIS=&axordp %end;
+      %IF %QUOTE(&axordh) ne   %THEN %do; HAXIS=&axordh %end;
+      ;
+      LABEL inc=
+	 %IF &k=1 %THEN "Incidence per 100000 person-years"; %ELSE "Prob(&case>=&kmid)"; ;
+      
+      %end;  /* end of plotinc eq T */
+   %end;  /* end of plotprob eq T */
+     %END;  /* end of plot eq 1 or plot eq 3 */
+
+
+/**************************************/
+%IF &plot=2 | &plot=3 %THEN %DO;
+/**************************************/
+
+   %IF %QUOTE(&axordv)=  | %QUOTE(&axordh)=  %THEN %DO;
+      DATA _tmp_;SET _tmp_ END=_eof_;
+      DROP _y_;_y_=lower;
+      %AXISSPEC(VAR="&exposure _y_");
+       _y_=upper; 
+      %AXISSPEC;
+      %IF &groups ne   %THEN %DO;
+        IF logit>. THEN DO;
+           _y_=logit;
+           %AXISSPEC;
+           END;
+         %END;  /* end of groups not empty */
+     
+      %AXISSPEC(END=_eof_);
+      RUN;  %*Creates mac. var. SPEC1 and SPEC2;
+      %END; /* end of axordv or axordh empty */
+     
+      %IF %QUOTE(&axordv) ne   %THEN %LET spec2=&axordv;
+      %IF %QUOTE(&axordh) ne   %THEN %LET spec1=&axordh;
+
+
+      %IF &tlevel>0 %THEN %DO;
+         %LOCAL font;%IF &tlevel>2 %THEN %LET font=TRIPLEX;
+         %ELSE %LET font=SIMPLEX;
+
+         %IF &plotprob=F %THEN %DO;
+           /*  TITLE2 H=1.6 F=&titlefont "Estimated Spline Transformation and 95% C.I."; */
+           TITLE2 H=%sysevalf(1.6*&titlemult) F=&titlefont " ";
+           %END; /* end of plotprob eq f */
+         %IF %length(&adj) ne 0  & (&tlevel=2 | &tlevel=4) %THEN %DO;
+           /*   FOOTNOTE H=1.1 F=DUPLEX "Estimates Adjusted for:&adj"; former macro end;*/
+           FOOTNOTE H=%sysevalf(1.1*&footmult) F=DUPLEX " ";
+           %END;
+        %END;  /*  end of tlevel ne 0 */
+     run;
+/****   
+%let minx = %scan(&spec1,1,%str( ));
+%let maxx = %scan(&spec1,3,%str( ));
+%let miny = %scan(&spec2,1,%str( ));
+%let maxy = %scan(&spec2,3,%str( ));
+%let by_y = %scan(&spec2,5,%str( ));
+***/
+
+   data _tmp_;  set _tmp_;   x=&exposure;  run;
+   
+   proc sort data=_tmp_;  by x;  run;
+
+   %if %upcase(&plotdec) = T %then %do;
+      proc sort data=pctile;  by x;  run;
+
+ 
+   data _tmp_;  set _tmp_ 
+      pctile(in=inpct);
+      if inpct and "&e" eq "T" then pctile = 1;
+      run;
+  %end;  /* end of plotdec=T */
+
+
+
+/*---------------*******************
+********add estimates from indicator analysis to the dataset*******/ 
+   %if %quote(&ordata)  ne  %then %do;
+      proc sort data=_tmp_; by x;  run;
+      
+      data _or; 
+      set &ordata; 
+      x=&x_value; 
+   
+      array ora &or &or_lower &or_upper; 
+      do over ora;  or=ora; output; end;
+      keep x or; 
+      run;
+   
+      proc sort data=_or; by x;  run;
+   
+      data _tmp_;  merge _tmp_ _or;  by x;    
+      %if "&refval" ne "" %then %do;  if x=&scale then ref=1;  %end;
+      run;
+   
+      %end;  /* end of nonempty ordata */
+
+
+   %if &displayx eq RUGPLOT %then %do;
+      proc sort data=_tmp_;  by &exposure;  run;
+   
+      data _tmp_;  merge _tmp_ _kde_;  by &exposure;  run;
+      %end;  /* end of displayx eq rugplot */
+
+   
+   /****************
+   /* use proc kde to get dataset _kde_ with density */
+   ods listing close;
+
+   /*----------------------------------------------------------*/
+   %if "%upcase(&footer)" = "DEFAULT" %then %do;
+      %if %length(&adj) ne 0 and &_kl_adj eq 1 %then %let footer = Adjusted for &_adj0 ;
+      %else %do;  
+         %if  %length(&adj) ne 0 and &_kl_adj gt 1 %then %let
+         footer = Adjusted for &_adj0 and other variables ;
+         %else %let footer=Not adjusted ;
+         %end;  /* end of nonempty adj */
+      %end;  /* end of footer eq default */
+
+		%else %if "%upcase(&footer)" = "NONE" %then %let footer= ;
+
+
+   /* DETERMINES FOOTNOTE */
+   %if &displayx  eq  F %then %do;
+      %if "&footer" ne ""  %then %do;
+         %if &outplot eq PS or &outplot eq CGM  %then %do;
+         footnote h=%sysevalf(1.1*&footmult) f=&footfont "&footer";
+            %end;
+         %else %if  &outplot eq JPEG or &outplot eq HTML %then %do;
+            footnote h=%sysevalf(2*&footmult) f=&footfont "&footer";
+            %end;  
+         %end;  /* nonempty footer */
+      %end;  /* displayx eq f */
+
+   filename picture "&pictname";
+   ods listing;
+
+   goptions reset=all nodisplay
+     device=
+             %if &outplot eq PS         %then psepsf ;
+      %else  %if &outplot eq  HTML       %then   html; 
+      %else  %if &outplot eq  CGM        %then  cgm  ; 
+      %else  %if &outplot eq  JPEG       %then jpeg;
+      nodisplay 
+      /*  gaccess=sasgaedt */
+      gsflen=80
+      gsfmode=replace 
+      gsfname=picture
+       ; 
+  
+/****making the graphic*****/
+
+   %vls1;  /* parse vlabel in case using vlabelstyle=H */
+
+   %if &displayx = T %then %do;
+
+      /* create the smoothed histogram plot to be replayed into bottom template panel*/  
+      goptions vsize=2.5 in;
+      symbol1 c=black i=join l=1;
+
+      /* due to the size issue, there are different settings for postscript file & jpeg file" */ 
+      %if &outplot eq PS  or &outplot eq CGM %then %do;
+         axis4 value=none minor=none major=none
+         %if &vlabelstyle eq V %then %do;
+            label=( h=%sysevalf(1.3*&axlabmult) f=&axlabfont a=90 r=0 'Smoothed' j=c 'Histogram'); 
+         %end;
+         %else %do;
+            label=(h=%sysevalf(1.3*&axlabmult ) f=&axlabfont  j=l  'Smoothed' j=l 'Histogram'  j=l a=90);
+         %end;
+         axis1 value=(h=%sysevalf(1.2*&axvalmult) f=&axvalfont)
+            label=(h=%sysevalf(1.3*&axlabmult) f=&axlabfont) length=&hlength in origin=(&horigin in) order=&spec1;
+         %if "&footer" ne ""  %then %do;   footnote1 h=%sysevalf(1.1*&footmult) f=&footfont "&footer";   %end;
+         %end;  /* end of outplot eq ps or cgm */
+   
+      %else %if &outplot eq JPEG  or &outplot eq HTML %then %do;      
+         axis4 value=none minor=none major=none
+         %if &vlabelstyle eq V %then %do;
+            label=( h=%sysevalf(2*&axlabmult) f=&axlabfont a=90 r=0 'Smoothed' j=c 'Histogram'   );
+         %end;
+         %else %do;
+            label=(h=%sysevalf(2*&axlabmult )  f=&axlabfont  j=l  'Smoothed' j=l 'Histogram'  j=l a=90);
+         %end;
+         axis1   value=(h=%sysevalf(2*&axvalmult) f=&axvalfont)
+            label=(h=%sysevalf(2*&axlabmult) f=&axlabfont) length=&hlength in origin=(&horigin in)  order=&spec1;
+         %if "&footer" ne ""  %then %do;   footnote1 h=%sysevalf(1.5*&footmult) f=&footfont "&footer";   %end;
+         %end;  /* end of outplot eq jpeg or html */ 
+   
+      proc sort data=_kde_; by &exposure; 
+      
+      proc gplot data=_kde_;
+      plot density*&exposure=1/vaxis=axis4 haxis=axis1 noframe;
+      %if "(&hlabel)"  ne ""  %then %do;    label &exposure = "&hlabel";    %end;
+      run;
+      quit;
+      
+      
+      /*specify Vsize for entry to be replayed into top template panel*/
+      %if &outplot eq PS   or &outplot eq CGM %then %do;   goptions vsize=7.4 in;   %end;
+      %else %if &outplot eq JPEG or &outplot eq HTML %then %do;   goptions vsize=6.3 in;   %end;
+      %end;   /* end of &displayx eq T */
+		 
+		 footnote1; 
+		 %if "%upcase(&graphtit)" ne "NONE" and "&graphtit" ne "" %then %do;
+		    title2 h=%sysevalf(1.6*&titlemult) f=&titlefont "&graphtit";
+		    %end;
+		    
+		    %if &displayx  eq  F %then %do;
+		       %if "&footer" ne ""  %then %do;   footnote h=%sysevalf(1.1*&footmult) f=&footfont "&footer";  %end;
+		       %end;
+		       
+		       
+		       *----------------------------------------------------------;
+ /* resetting goptions for main graph */
+    goptions reset=(symbol);
+    
+    symbol1 i=join l=1  c=black;
+    symbol2 i=join l=42 c=black;
+    symbol3 i=join l=10 c=black;
+    symbol4 i=none c=black value=dot;
+    symbol5 c=black interpol=hiloct l=1; /*v=U font=marker;*/
+    symbol6 i=none c=black value=dot; /* original: h=1.5 too big dot*/
+    symbol7 c=black i=none font=simplex value="|";
+										
+	pattern1 value=mempty color=white;
+	pattern2 value=msolid color=ligr;
+	pattern3 value=msolid color=black;
+										
+	pattern4 value=msolid color=black;
+	pattern5 value=msolid color=ligr;
+	pattern6 value=msolid color=ligr;
+	pattern7 value=msolid color=ligr;
+										
+	%if &displayx = T %then %do;
+/*
+	   axis1 value=(h=1 f=&axvalfont) label=none length=6.0 in  origin=(1.5 in, 3.1 cm)
+	      order=&spec1;
+*/
+	   %if &outplot eq PS  or &outplot eq CGM %then %do;
+	      axis1 value=(h=%sysevalf(1.2*&axvalmult) f=&axvalfont) label=none length=&hlength in
+                 origin=(&horigin in)  order=&spec1;
+	      %end;
+	   %else %do; /* outplot eq jpeg or html */
+	      axis1 value=(h=%sysevalf(1*&axvalmult) f=&axvalfont) label=none length=&hlength in
+                 origin=(&horigin in)  order=&spec1;
+	      %end;   
+	   %end;  /* end of displayx eq t */   
+	   %else %do;  /* displayx ne T */   
+	      axis1 value=(h=%sysevalf(1.2*&axvalmult) f=&axvalfont) label=(h=%sysevalf(1.3*&axlabmult) f=&axlabfont)
+                 length=&hlength in origin=(&horigin in) order=&spec1;
+	      %end;
+	      
+	      %if &outplot eq PS  or &outplot eq CGM %then %do; 
+		 axis2 value=(h=%sysevalf(1.2*&axvalmult) f=&axvalfont) label=(h=%sysevalf(1.3*&axlabmult) f=&axlabfont 
+			%if &vlabelstyle eq V %then %do;  a=90 r=0  "&vlabel"  %end;
+									 
+		 %else %do; %vls2   %end;
+									 )
+	      %if &axordvlog10 eq T %then %do;  logstyle=expand logbase=10  %end; 
+		   order=&spec2;
+		 %end;  /* end of outplot eq ps or cgm */
+		%else %do;  /* outplot eq jpeg or html */
+		   axis2 value=(h=%sysevalf(1*&axvalmult) f=&axvalfont) label=(h=%sysevalf(1.3*&axlabmult) f=&axlabfont 
+				%if &vlabelstyle eq V %then %do;  a=90 r=0   "&vlabel"   %end;
+				%else %do;  %vls2   %end;
+									   )
+		    %if &axordvlog10 eq T %then %do;  logstyle=expand logbase=10;  %end;
+			      order=&spec2;
+			      %end;  /* end of outplot eq html or jpeg */
+					
+					
+	proc gplot data=_tmp_;
+					
+	%if &plotorrr eq T %then %do;
+	   %if &ci = 1 %then %do;           /* clouds for confidence intervals */
+	      plot lower*&exposure=2  upper*&exposure=2 splntran*&exposure=1 
+		 %end;
+						     
+	   %else %if &ci = 2 %then %do;     /* dotted lines for confidence intervals */
+	      plot lower*&exposure=2 upper*&exposure=2  splntran*&exposure=1
+		 %end;
+	   
+	   %else %if &ci = 0 %then %do;     /* no confidence intervals */
+	      plot splntran*&exposure=1
+		 %end;
+	   
+	   %if &plotdec = T %then %do;  pctile*x=4  %end;
+	   
+	   %if &displayx = RUGPLOT %then %do;   density*&exposure=7  %end;
+	   
+	   %if %quote(&ordata) ne %then %do;
+	      or*x=5
+		 ref*x=6 
+		 %end;
+	   
+	   %if &groups ne   %then %do;
+	      logit*&exposure=3
+		 %end;
+	   
+	   /overlay noframe vref=1 lvref=34 cvref=black  haxis=axis1 vaxis=axis2  
+	      %if &ci = 1 %then areas=2; 
+	   %if &klines = T %then %do;  href= %do i=1 %to &nk;  &&m&i  %end;
+	      lhref=34
+		 %end;  /* end of klines eq t */
+	   ;
+	   %end;  /* end of plotorrrr=t */
+		     
+	%if &groups ne   %then %do; symbol3 i=none v=-; %end;
+		     
+	%if %quote(&hlabel)  ne   %then %do;  label &exposure = "&hlabel";  %end;
+	
+	%if &ci = 1 %then %do;
+	   %if %quote(&vlabel)  ne   %then %do;  label lower = "&vlabel";  %end;
+	   %else %if "&e" eq "T" %then %do;
+	      %if &model = LOGISTIC %then %do;  label lower = "Odds Ratio";  %end;
+	      %else %do;  label lower = "Incidence Rate Ratio";  %end;
+	      %end;  /* end of e eq t */
+	   
+	   %else %do;  /* e ne t */
+	      %if &model = LOGISTIC %then %do;  label lower = "Log Odds Ratio";  %end;
+	      %else %do;  label lower = "Log Incidence Rate Ratio";  %end;
+	      %end;  /* end of e ne t */
+	   %end;  /* end of ci eq 1 */
+		     
+		     %else %do;  /* ci ne 1 */
+			%if "&vlabel"  ne ""  %then %do;  label splntran = "&vlabel";  %end;
+			%else %if "&e" eq "T" %then %do;
+			   %if &model = LOGISTIC %then %do;   label splntran = "Odds Ratio";  %end;
+			   %else %do;  label splntran = "Incidence Rate Ratio";  %end;  /* not logistic */
+                           %end;  /* end of e eq t */
+			%else %do;
+			   %if &model = LOGISTIC %then %do;  label splntran = "Log Odds Ratio";  %end;
+			   %else %do; label splntran = "Log Incidence Rate Ratio";  %end;
+                           %end;  /* end of else do--e ne t */
+                        %end;  /*  end of xx */
+			
+			
+   /* add labels if not provided */
+			%if &plotprob eq T and &plotinc eq F and "&vlabelp" eq ""  %then
+			   %let vlabelp=Predicted probability;
+			
+			%if &plotprob eq T and &plotinc eq T and "&vlabeli" eq  "" %then
+			   %let vlabeli=Estimated incidence rate per &pyunit;    
+			
+			%IF  &plotprob eq T %THEN %DO;
+			%if &plotinc eq F %then %do;
+			   %vls1p;
+			   PLOT lowerprb*&exposure=2 upperprb*&exposure=2 prob*&exposure=1
+			      %IF &groups ne   %THEN %do;    &case*&exposure=3  %end;
+			   /OVERLAY noframe 
+			      %IF &klines eq T %THEN HREF= %do i=1 %to &nk;  &&m&i  %end; 
+			   HAXIS=AXIS1 VAXIS=AXIS3;
+			   %if &vlabelstyle eq "V" %then %do;
+			      AXIS3 VALUE=(H=%sysevalf(1.2*&axvalmult) F=&axvalfont)
+				 LABEL=(H=%sysevalf(1.3*&axlabmult) F=&axlabfont A=90 R=0 "&vlabelp") 
+				 %end;
+			   %else %do;  /* vlabelstyle ne v */
+			      %if &_nvlp_ eq 1 %then %do;
+				 AXIS3  VALUE=(H=%sysevalf(1.2*&axvalmult) F=&axvalfont)
+				    LABEL=(H=%sysevalf(1.3*&axlabmult) F=&axlabfont  "&vlabelp")
+				    %end;
+			      %else %do;  /* vlabelp has more than 1 word */
+				 AXIS3  value=(H=%sysevalf(1.2*&axvalmult)  f=&axvalfont)
+				    label=(h=%sysevalf(2.0*&axlabmult) f=&axlabfont %vls2p  )
+				    %end;
+			      %end;  /* end of vlabelstyle ne v */
+			   %if &axordp ne  %then ORDER=&axordp;;
+			   %end;  /* end of plotinc eq f */
+			
+			%else %if &plotinc eq T %then %do;
+			   %vls1i;
+			   PLOT lowerinc*&exposure=2 upperinc*&exposure=2 inc*&exposure=1
+			      %IF &groups ne   %THEN %do;    &case*&exposure=3  %end;
+			   /OVERLAY noframe
+				   %IF &klines eq T %THEN HREF= %do i=1 %to &nk;  &&m&i  %end; 
+				HAXIS=AXIS1 VAXIS=AXIS3;
+				%if &vlabelstyle eq "V" %then %do;
+				   AXIS3 VALUE=(H=%sysevalf(1.2*&axvalmult) F=&axvalfont)
+				      LABEL=(H=%sysevalf(1.3*&axlabmult) F=&axlabfont A=90 R=0 "&vlabeli") 
+				      %end;
+				%else %do;  /* vlabelstyle ne V */
+				   %if &_nvli_ eq 1 %then %do;
+				      AXIS3  value=(h=%sysevalf(1.2*&axvalmult) f=&axvalfont)
+					 label=(h=%sysevalf(2.0*&axlabmult ) f=&axlabfont  "&vlabeli" a=90 )  
+					 %end;
+				   %else %do;  /*  nvli gt 1 */
+				      AXIS3  value=(h=%sysevalf(1.2*&axvalmult) f=&axvalfont)
+					 label=(h=%sysevalf(2.0*&axlabmult ) f=&axlabfont  %vls2i    )
+					 %end;
+				   %end;  /* end of vlabelstyle ne v */
+					   %if &axordi ne  %then ORDER=&axordi;;
+					    %end;  /* end of plotinc eq t */
+						      %END;  /* end of plotprob eq t */
+								
+					   /*  former macro end */
+					       
+					       
+					       RUN;  quit;
+					       
+					       
+					       ods listing;    
+					       goptions vsize=0 in  display;
+					      
+    /* create 2 panel template, treplay GPLOT entries into template */
+       %if &displayx = T %then %do;
+	 goptions vsize=0 in  display;
+	 
+	 proc greplay nofs igout=work.gseg tc=tempcat;
+	 tdef spec2 des='flex V2 template'
+	    1/llx=0        lly=0
+	    ulx=0        uly=20
+	    urx=100      ury=20
+	    lrx=100      lry=0
+	    
+	    2/llx=0        lly=25
+	    ulx=0        uly=100
+	    urx=100      ury=100
+	    lrx=100      lry=25
+	    
+	    ;
+	 template spec2;
+	 treplay 1:1 2:2;
+	 run;
+	 quit;
+	 
+	 %end;  /* end of displayx eq t */
+		   
+		  %else %do ;  /* displayx ne t */
+       /* create 1 panel template to just output one plot */
+		     proc greplay nofs igout=work.gseg tc=tempcat;
+		     tdef spec1 des='flex V1 template'
+			1/llx=0        lly=0
+			ulx=0        uly=100
+			urx=100      ury=100
+			lrx=100      lry=0
+			;
+		     template spec1;
+		     treplay 1:1;
+		     run;
+		     quit;
+	    %end;   /* end of displayx ne t */
+		       
+		       proc greplay nofs igout=work.gseg;
+		       delete _all_;
+		       run;
+	   %end;  /* end of plot eq 2 or plot eq 3 */
+		     
+    /** to output information to an ascii file **/
+      %IF &plot eq 4 %THEN %DO;
+      ods listing;
+      filename aaa "&plotdata";
+      
+      %if "&plotprint" eq "T" %then %do;  proc print data=_tmp_;  run;  %end;
+      DATA _NULL_;   SET _tmp_(IN=_in1_);
+      format splntran lower upper prob lowerprb upperprb
+      inc lowerinc upperinc
+      8.3;
+      
+      %if "&plotorrr" eq "T" %then %do;      
+	 FILE aaa &filemode;
+	 IF _N_=1 THEN
+            PUT @1 "&exposure "  @16 "Estimate"    @31 "Lower "  @46    "Upper ";
+	 PUT @1 &exposure  @16 splntran  @31 lower  @46 upper;
+	 %END;  /* end of plotorrrr eq t */
+	 
+	 %if "&plotprob" eq "T" and "&plotinc" eq "F" %then %do;
+	    FILE aaa &filemode;
+	    IF _N_=1 THEN
+	       PUT @1 "&exposure "  @16 "Prob"   @31   "Lower "     @46 "Upper ";
+	    PUT @1 &exposure  @16 prob  @31 lowerprb  @46 upperprb;
+	    %end;  /* end of plotprob eq t and plotinc eq f */  
+	 
+	 %if "&plotprob" eq "T" and "&plotinc" eq "T" %then %do;
+	    FILE aaa &filemode;
+	    IF _N_=1 THEN
+	       PUT @1 "&exposure "  @16 "IR"      @31 "lower "     @46 "Upper ";
+	    PUT @1 &exposure  @16 Inc  @31 Lowerinc  @46 Upperinc;
+	    %end;  /* end of plotprob eq t and plotinc eq t */
+	 run;
+	 %end;  /* end of plot eq 4 */
+		   
+%END;  /* end of PLOT ne 0 */
+	  
+  /**
+   data rl._kde_;
+   
+   set _kde_;
+   
+   data rl._tmp_;
+   set _tmp_;
+   
+   **/
+proc datasets nolist;
+   delete convstat2 convstat1 convstat0 fitstat2 
+      fitstat1 fitstat0 _est2_ _est1_ _est0_
+      _estpts_ _est_ _m_ _tmp_ display ;
+   
+   run;
+   
+   *----------------------------------------------------------;     
+%goto quit;
+   
+%out1:
+   %put Exiting LGTPHCURV9 because of ERROR ;
+   %put;
+   %goto quit;
+   
+%quit: ;
+   
+%outd:  options &_nt  formdlim="&_fdl"  ;
+   
+   footnote1;
+   title1;
+%MEND lgtphcurv9;
+options syntaxcheck;
+/*****************************************************************************************;
+Last updated: Aug. 22, 03 
+submacro to check inputs errors
+*****************************************************************************************/
+%macro psplerr;
+
+%LOCAL lastds x7 ninclude  kmid nameint _nox_ _noy_ _nods_ _noev_ _nost_ 
+   _nokn_ _not1_ _not2_ agnocox  noad ;
+
+/* checking that all required parameters are there */
+%let _nox_=0;  %let _noy_=0;  %let _nods_=0;  %let _noev_=0;  %let _nost_=0;
+%let _nokn_ = 0;  %let _not1_=0;  %let _not2_=0;
+%let agnocox=0;  %let noad=0;
+%let _lessadj1=0;
+%let _lessadj2=0;  
+
+
+/* data set */
+
+%if &data eq %then %let _nods_=1;
+%else %do;
+
+   %if &num_adj GT 0 and &model eq LOGISTIC and
+      (&plotprob eq T or &plotinc eq T) and %length(&adjdat) ne 0 %then %do;
+          %varIndat(adjvar=&adj, adjdata=&adjdat);
+          %if &nofound=1 %then %let _lessadj1=1;      
+          %varIndat(adjvar=&adj, adjdata=&data);
+          %if &nofound=1 %then %let _lessadj2=1; 
+  %end; 
+%end;
+      
+   
+/* exposure var. */
+%if &exposure eq %then %let _nox_=1;
+/* case var. -- response var. */
+%if &case eq and &andgill ne T %then %let _noy_=1;
+
+%if &model eq COX or &model eq CONDLOG %then %do;
+  %if &time eq and &andgill eq F %then %let _noev_=1;
+     %if &model eq CONDLOG %then %do;
+      %if &strata eq %then %let _nost_=1;
+     %end;
+   %end; /*end of %if &model eq COX or &model eq CONDLOG  */
+
+%if &andgill eq T %then %do;
+   %if &agt1 eq %then %let _not1_=1;
+   %if &agt2 eq %then %let _not2_=1;
+   %if &model ne COX %then %let agnocox=1;
+%end; /* end of %if &andgill eq T */
+
+
+%if "&nk" eq "" and %length(&knot) eq 0 %then %let _nokn_=1;
+%if (&plotprob eq T or &plotinc eq T) and %length(&adj) ne 0 and "&adjdat" eq "" %then %let noad=1;
+
+%let _nosp=0;
+%if &usersplv ne  and &select ne 2 %then %do;
+%let _nosp=1;
+%end;
+
+/* intend to use spline vars. provided by user */ 
+%let _nosp2=0;
+%if &select eq 2 and &usersplv eq  %then %do;
+%let _nosp2=1;
+%end;
+   
+/* related to select=2 */
+%let _nose=0;
+%if &select eq 2 %then %do;
+
+     
+   
+          %if %length(&usersplv) ne 0 %then %do;
+   %if %sysfunc(countw(&usersplv)) > &k2 %then %do;
+      %let _nose=1;
+      %end;
+     %end;
+   
+%end; 
+
+
+/* ERROR messages go to .log and .lst files */
+
+%global misspar;
+%let misspar = 0 ;
+
+data a; *_null_;
+   nox=&_nox_;  noy=&_noy_;  nods=&_nods_;  noev=&_noev_;   nost=&_nost_;
+   nokn=&_nokn_;  not1=&_not1_;  not2=&_not2_;  agnocox=&agnocox;
+   noad=&noad; 
+   nosp=&_nosp; nosp2=&_nosp2; nose=&_nose;
+   lessadj1=&_lessadj1;
+   lessadj2=&_lessadj2;
+   
+   misspar=sum(nox, noy, nods, noev, nost, nokn, not1, not2, noad, nosp, nosp2, nose, lessadj1,lessadj2);
+   call symput ('misspar', misspar);
+   %errm1;
+   file print;
+   %errm1;
+  run;
+   
+%if &model ne LOGISTIC %then %do;
+   %if &plotprob eq T or &plotinc eq T %then %do;
+      %let plotprob = F ;  
+      %let plotinc = F;
+      data _null_;
+      put "WARN''ING:  You have requested a &model model and PLOTPROB=T or PLOTINC=T";
+      put "  You can only use PLOTPROB=T or PLOTINC=T with LOGISTIC models.";
+      put "  The macro will continue, using PROC PHREG" ;
+      put '  Make sure you know what you are doing.';
+    file print;
+      put "WARN''ING:  You have requested a &model model and PLOTPROB=T or PLOTINC=T";
+      put "  You can only use PLOTPROB=T or PLOTINC=T with LOGISTIC models.";
+      put "  The macro will continue, using PROC PHREG" ;
+      put '  Make sure you know what you are doing.';
+    run;
+  %end;
+%end;
+   
+   
+%if &model eq CONDLOG %then %do;  %let model = COX ;  %end;
+/* RL: change all 'time' into 'event' as the older version did */
+%if &model ne COX and &time ne %then %do;
+  data _null_;
+    put 'WARN''ING:  Your LGTPHCURV9 call has a value for the TIME parameter,';
+    put '  but you are using a LOGISTIC model.';
+    put '  The macro will continue, using a LOGISTIC model.';
+    put '  Make sure you know what you are doing.';
+    file print;
+    put 'WARN''ING:  Your LGTPHCURV9 call has a value for the TIME parameter,';
+    put '  but you are using a LOGISTIC model.';
+    put '  The macro will continue, using a LOGISTIC model.';
+    put '  Make sure you know what you are doing.';
+  run;
+%end;
+   
+%if &plot ne 0 and &plotorrr ne T and &plotprob ne T and &plotinc ne T %then %do;
+   %let plotorrr=T;
+    data _null_;   
+  put "WARN''ING: You have requested a plot but didn't give which plot    ";
+  put "         you would like to choose. You must assign at least one T";
+  put "         Here will plot 95% cloud CI.";    
+    file print;
+  put "WARN''ING: You have requested a plot but didn't give which plot    ";
+  put "         you would like to choose. You must assign at least one T";
+  put "         Here will plot 95% cloud CI.";    
+  %end;
+   
+
+%if &plotorrr eq T and (&plotprob eq T or &plotinc eq T) %then %do;
+   %let plotorrr = F;
+  data _null_;
+  put "WARN''ING: You have requested a plot for estimated OR/RR AND predicted";
+  put "         probability/incidence rate. You can only do one at a time.";
+  put "         The macro will plot the predicted probability/incidence rate.";
+    file print;
+  put "WARN''ING: You have requested a plot for estimated OR/RR AND predicted";
+  put "         probability/incidence rate. You can only do one at a time.";
+  put "         The macro will plot the predicted probability/incidence rate.";
+   
+%end;
+ 
+
+%mend psplerr;  
+
+*************** sub-macro used inside psplerr macro **********************;
+%macro errm1;
+   if misspar ne 0 then do;
+      put 'ERR''OR in MACRO call:  You did not give one or more of the required parameters.';
+      put ' ';
+      
+      if nox eq 1 then do;
+    put '  You did not give a variable name to use as EXPOSURE, as required';
+    put ' ';
+	 end;
+      
+      if noy eq 1 then do;
+    put '  You did not give a variable name to use as CASE, as required';
+    put ' ';
+	 end;
+      
+      if nods eq 1 then do;
+    put '  You did not name a DATA set to use, as required.';
+    put ' ';
+    end;
+      if noev eq 1 then do;
+    put '  You did not name a TIME variable,';
+    put '    as required when you use model=COX or CONDLOG.';
+    put ' ';
+	 end;
+      
+      if nost eq 1 then do;
+    put '  You did not name a STRATA parameter,';
+    put '    as required when you use model=CONDLOG.';
+    put ' ';
+    end;
+      if nokn eq 1 then do;
+    put '  You did not give either a number of knots, NK';
+    put '    or a list of knot points, KNOT';
+    put '  ';
+	 end;
+      
+      if not1 eq 1 then do;
+    put '  You specified an Anderson-Gill data format,';
+    put '    but you did not specify AGT1';
+	 end;
+      
+      if not2 eq 1 then do;
+    put '  You specified an Anderson-Gill data format,';
+    put '    but you did not specify AGT2';
+    put '  ';
+	 end;
+      
+      if agnocox eq 1 then do;
+    put '  You specified an Anderson-Gill data format,';
+    put '    but did not give model=COX.';
+    put '  ';
+	 end;
+      
+      if noad eq 1 then do;
+    put 'You specified PLOTPROB=T or PLOTINC=T, but did not give the';
+    put '   name of a data set with the values for the covariates';
+    put '   at which the probability or incidence rate is to be computed';
+	 end;
+
+      if nosp eq 1 then do;
+    put 'Here is a confusion: you provide spline variable list, but not select';
+    put 'to use it. So either set usersplv parameter empty or change select to 2';
+         end;  
+
+      if nosp2 eq 1 then do;
+    put 'Here is a confusion: you did not provide spline variable list, but select';
+    put 'to use it. So either provide it from your previous run, or change select to';
+    put '1 to use all the spline variables or 3 to let program do auto selection.';	 
+         end;           
+
+      if nose eq 1 then do;
+    put 'USERSPLV contains names of spline variables that were not generated.';
+    put '     Check the spellings of the variable names.';
+    put '     Also check that there are no repeats in the USERSPLV list.';
+  end;   
+  
+     if lessadj1 eq 1 then do;
+    put "There is at least one adjust variable ";
+    put " which is not defined in dataset &adjdat"; 
+    end;
+       
+    else  if lessadj2 eq 1 then do;
+    put "There is at least one adjust variable ";
+    put " which is not defined in dataset &adjdat";  
+    end;
+end;
+   
+%mend;
+
+/*****************************************************************************************
+  make spline variables
+******************************************************************************************/
+
+/** Last updated: 12/18/03 by Ruifeng Li **/
+
+
+
+/*****************************************************************************************;
+Last updated: July 31, 03 
+submacro to check if certain var. list is in certain dataset 
+*****************************************************************************************/
+%macro varIndat (adjvar=, adjdata= );
+ 
+** extract variable names from the dataset &adjdata;
+
+proc transpose data=&adjdata  prefix=var name=adjvar2 
+                              out=_adjname_ (keep=adjvar2);
+
+%if %length(&adjvar) eq 0 %then %do;  %let m = 0;  %end;
+%else %do;  %let m=%sysfunc(countw(&adjvar));  %end;
+
+proc IML;
+
+ use _adjname_;
+ read all var {adjvar2} into adj2;
+ close _adjname_;
+ k=nrow(adj2);
+
+/* default is 0, so found adj var. in adjdata set */   
+  nofound=0;
+  
+   
+ %do i=1 %to &m;
+   /* y is the ith adj var. */
+  %local y uy;
+  %let  y = %scan(&adjvar, &i, %str( ));
+  %let uy=%upcase(&y); 
+  do j=1 to k;  
+    /** if found it in the dataset, exit from the inner loop 
+       j will be 10000000--artifial number to distinguish k+1 **/
+      if "&y" = adj2[j,1] | "&uy"=adj2[j,1] then j=10000000;
+  end;     
+   
+ 
+  /** not found, then normal exit from the inner loop with j=k+1, 
+      and exit from the outer loop with flag value 1 for nofound;
+      if found, j will be 10000000   **/
+   if j=k+1 then do; 
+          
+     nofound=1;
+ 
+  /** just don't have a better way to record this flag value **/
+     create nofounddataset from nofound [colname={noo}];
+     append from nofound;
+     close nofounddataset;
+     stop;
+    end;
+ %end;    
+
+free adj2 k;   
+    
+quit;
+
+%global nofound;
+%let nofound=0;  
+/** if not found, then create nofounddataset dataset **/
+
+%if %sysfunc(exist(nofounddataset)) %then %do;
+   %let nofound=1;
+ 
+proc datasets;
+   delete nofounddataset;   
+   run;  
+%end;
+
+proc datasets;
+   delete _adjname_;   
+   run;
+
+%mend varIndat;
+%macro numargs(arg, delimit);
+   %if %quote(&arg)= %then %do;
+        0
+   %end;
+   %else %do;
+     %let n=1;
+     %do %until (%qscan(%quote(&arg), %eval(&n), %str( ))=%str()); 
+        %let n=%eval(&n+1);
+        %end;
+	%eval(&n-1)
+   %end;
+   %mend numargs;
+
+
+/********************************************************************************
+submacro to get the total # of obs. inside a dataset
+********************************************************************************/
+%macro numobs(dsn);
+/*  to count number of obs in a data set */
+/*  11-04-96 */
+
+%global numobs;
+data _null_;
+if 0 then set &dsn nobs=howmany;
+call symput ('numobs', left(put(howmany, 8.)));
+stop;
+run;
+%mend;
+
+
+/********************************************************************************
+ original is from /udd/stleh/ehmac/pstep8.sas
+    Ruifeng, Feb. 2004
+    
+    this program is just for proc phreg -- cox model only 
+
+Updated Memo:
+
+On Dec 18, 2003: add one more parameter 'called'. Default 0 means to print out the results
+ when the macro stands alone; otherwise, it will not print out when it is called by psplinet. 
+
+**********************************************************************************/
+
+
+/************************************************************************************
+   original is from /udd/stleh/ehmac/pstep8.sas
+    modified for PROC LOGISTIC
+   can handle no adj var. 
+Updated memo: 05/06/03
+              11/03/03: add %let adj=&adj &incl; statement to include &exposure in base model
+              12/09/03: add one more parameter 'called': if it is default 0, 
+                       then print the final model here; otherwise it should omit 
+                       since the program which calls this macro will print it
+ 
+
+************************************************************************************/
+
+
+
+/************************************************************************
+  takes a list and makes it into lines for printing 
+************************************************************************/
+%macro lgrpargs(arg=, prefix=,ngroup=8);
+%local i j m numarg ;
+%global _kl_&prefix ;
+
+%if %length(&arg)  ne 0  %then %let numarg = %sysfunc(countw(&arg));
+   %else %let numarg = 0;
+
+
+%if %length(&arg) ne 0 %then %do;
+   %do i=1 %to &numarg;
+      %local _av_&i;
+      %let _av_&i = %scan(&arg, &i, %str( ));
+   %end;
+%end;
+   
+/** get how many groups the user wants. For example, if every 8 in one group, 
+ the total arg is 20, then k will be 3**/
+
+%let _kl_&prefix=%sysfunc(ceil(&numarg/&ngroup));
+/*
+%put &&_kl_&prefix;
+*/
+%do i=0 %to %eval(&&_kl_&prefix - 1);
+   
+   %global _&prefix&i;
+   %let _&prefix&i= ;
+   %do j=1 %to &ngroup;
+     %let m=%eval(&j + &i * &ngroup);      
+     %if &m <= &numarg %then %do;
+       %let _&prefix&i =&&_&prefix&i  &&_av_&m;
+      %end;
+     %end;
+    
+    %end;
+   
+   run;
+
+
+%mend ;
+%macro dist(data=, bwm=, vbl=, ng=500,  distmeth=, notes=nonotes, haxis=, vaxis=);
+options &notes;
+proc kde data=&data;  univar &vbl / ng=&ng bwm=&bwm method=&distmeth out=_kde_;  run;
+data _kde_;  set _kde_;  
+  &exposure=value;
+run;
+
+%mend;
+
+/************************************************************************ 
+SAS Macro AXISSPEC
+
+    In a DATA step, calculates the  minima  and  maxima  for  a  list  of
+    variables, and at the last observation in the dataset, defines global
+    macro  variables  spec1,...,specp, where p is the number of variables
+    being  processed.   These  macro   variables   define   "nice"   axis
+    specifications that are generally more pleasing than those derived by
+    PROC  PLOT  or PROC GPLOT.  The specifications are of the form low TO
+    high BY inc.  The user may specify the number of  intervals  to  make
+    and   may   optionally   specify   the  interval  width  (STEP).   If
+    unspecified,  this  width  will  be  computed.   AXISSPEC  uses   the
+    algorithm  of  J.  A.  Nelder, Applied Statistics 25:94-7, 1976.  The
+    default number of intervals is N=10.
+
+    Usage:
+
+    DATA ...; SET ...  END=e;
+    %AXISSPEC(VAR=x y z); *Specify VAR (in quotes if >1) first call only;
+    %AXISSPEC;             *Used if x,y,z values change more than once
+                            for current observation;
+    %AXISSPEC(END=e,(N=),(STEP=)); *Issue once at end. e=1 if end of file;
+    PROC PLOT;PLOT y*x/HAXIS=&spec1 VAXIS=&spec2; *For example;
+
+    The %AXISSPEC  command  above  without  END=e  is  only  issued  when
+    variable  values change within the current observation.  This happens
+    for example when preparing for  overlaying  multiple  curves  on  one
+    graph.   Suppose  for  example  that one wishes to plot a value v and
+    lower and upper confidence limits cl,cu on the same graph.  One would
+    specify commands such as the following:
+
+    y=cl; %AXISSPEC(VAR=y); y=cu; %AXISSPEC(END=e);
+    PROC PLOT;PLOT v*x='*' cl*x='.' cu*x='.'/OVERLAY VAXIS=&spec1;
+
+    If variable values do not change  within  an  observation,  only  one
+    AXISSPEC statement is needed:  %AXISSPEC(VAR=x y z,END=e);
+
+    Author   : Frank Harrell
+               Clinical Biostatistics, Duke University Medical Center
+               Takima West Corporation
+    Date     : 16 Sep 86
+    Modified : 17 Sep 86
+************************************************************************/
+%macro axisspec(var=,end=,n=10,step=);
+%LET var=%SCAN(&var,1,'"''');
+%IF &var^=  %THEN %DO;
+   %LOCAL _nv_ i; %LET _nv_=0;
+     %DO i=1 %TO 1000;
+     %IF %SCAN(&var,&i)=  %THEN %GOTO nomorev;
+     %LET _nv_=%EVAL(&_nv_+1);
+     %END;
+   %nomorev:
+   DROP _rn_ _x_ _fmax_ _fmin_ _step_ _range_ _fact_ _omin_ _omax_
+    _j_ _ctf_ _unit_1-_unit_13 _tol_ _bias_ _xmin_ _xmax_
+    _k_ _min_1-_min_&_nv_ _max_1-_max_&_nv_;
+   RETAIN _unit_1 1 _unit_2 1.2 _unit_3 1.4 _unit_4 1.5 _unit_5 1.6
+    _unit_6 2 _unit_7 2.5 _unit_8 3 _unit_9 4 _unit_10 5 _unit_11 6
+    _unit_12 8 _unit_13 10 _tol_ 5E-6 _bias_ 1E-4
+    _min_1-_min_&_nv_ 1E30 _max_1-_max_&_nv_ -1E30;
+   ARRAY _unit_{13} _unit_1-_unit_13;
+   ARRAY _var_{*} &var;
+   ARRAY _min_{*} _min_1-_min_&_nv_; ARRAY _max_{*} _max_1-_max_&_nv_;
+   %END;
+ DO _k_=1 TO DIM(_var_);
+ _min_{_k_}=MIN(_var_{_k_},_min_{_k_});
+ _max_{_k_}=MAX(_var_{_k_},_max_{_k_});
+ END;
+%IF &end^=  %THEN %DO;
+IF &end THEN DO _k_=1 TO DIM(_var_);
+_RN_=&n;_FMAX_=_max_{_k_};_FMIN_=_min_{_k_};_X_=ABS(_FMAX_);
+_OMIN_=_FMIN_;_OMAX_=_FMAX_;_FACT_=1;_CTF_=0;
+IF _X_=0 THEN _X_=1;
+IF (_FMAX_-_FMIN_)/_X_<=_TOL_ THEN DO; %*VALUES EFFECTIVELY EQUAL;
+     IF _FMAX_<0 THEN _FMAX_=0;
+     ELSE IF _FMAX_=0 THEN _FMAX_=1;
+     ELSE _FMIN_=0;
+     END;
+%IF &step^=  %THEN %DO; _step_=&step; %GOTO SKIPSTEP; %END;
+DROP _s_ _i_;
+TRYAGAIN:_STEP_=(_FMAX_-_FMIN_)/_RN_*_FACT_; _S_=_STEP_;
+%*THE FACTOR 1+1/_RN_ IS INSERTED IN THE NELDER ALGORITHM TO INSURE
+  THAT THE RESULTING LIMITS INCLUDE ALL THE DATA;
+LOOP1:IF _S_>=1 THEN GO TO LOOP10;_S_=_S_*10;GO TO LOOP1;
+LOOP10:IF _S_<10 THEN GO TO CALC;_S_=_S_/10;GO TO LOOP10;
+CALC:_X_=_S_-_BIAS_;
+     DO _I_=1 TO 13;
+      IF _X_<=_UNIT_{_I_} THEN GO TO FOUND_U;
+     END;
+FOUND_U:_step_=_step_*_unit_{_i_}/_s_;
+%SKIPSTEP: _range_=_step_*_rn_;
+%* MAKE FIRST ESTIMATE OF XMIN;
+_X_=.5*(1+(_FMIN_+_FMAX_-_RANGE_)/_STEP_);_J_=INT(_X_-_BIAS_);
+IF _X_<0 THEN _J_=_J_-1;_XMIN_=_STEP_*_J_;
+%* TEST IF XMIN COULD BE ZERO;
+IF _FMIN_>=0 & _RANGE_>=_FMAX_ THEN _XMIN_=0;_XMAX_=_XMIN_+_RANGE_;
+%* TEST IF XMAX COULD BE ZERO;
+IF _FMAX_<=0 & _RANGE_>=-_FMIN_ THEN DO;_XMAX_=0;_XMIN_=-_RANGE_;END;
+%IF &step=  %THEN %DO;
+IF _CTF_<4 & ((_XMAX_<_OMAX_)|(_XMIN_>_OMIN_)) THEN DO;
+      _CTF_=_CTF_+1; _FACT_=_FACT_*(1+1/_RN_);  GO TO TRYAGAIN;   END;
+ %END;
+CALL SYMPUT("spec"||trim(left(_k_)),
+ trim(left(_xmin_))||" TO "||trim(left(_xmax_))
+ ||" BY "||trim(left(_step_)));
+END;
+%END;
+%mend axisspec;
+
+%macro pstep8(data=, nowout=,  adj=, _pin=.05, _pout=.05, time=, event=, incl=&exposure,
+              andgill=F, agt1=, agt2=, modopt=, printcv=F,
+	      maxstep=10, notes=nonotes, k=3, called=0, noprint=t, strata=);
+   
+   
+ /**************************************************************************************  
+  data    data set used
+  case    name of case vbl
+  nowin   list of variables already in model
+  nowout  list of variables to select from
+  adj     list of adjusters
+  _pin    p value for adding variable
+  _pout   p value for dropping variable
+  incl    vbl to be included in printout of final model
+  **************************************************************************************/
+%let notes=%upcase(&notes);
+%let noprint=%upcase(&noprint);
+   options &notes;
+   
+%let adj=&adj &incl;
+   
+%if %length(&nowout) eq 0  %then %goto dfinish2;
+   
+%global nowin; 
+%let nowin= ;
+   
+%local dndone updone _nstep _fin_  _fdl _nt
+   i _nvni_ _nvnami_ _nout_  _nno_
+   j _nin_ _nout_ _nvno_ _nvnamo_ ;
+   
+ /** getoption is a system function to get value of formdlim and notes **/
+%let _fdl = %sysfunc(getoption(formdlim));
+%let _nt = %sysfunc(getoption(notes));
+   
+%if %length(&nowout) eq 0 %then %do;  %let _nno_ = 0;  %end;
+%else %do;  %let _nno_ = %sysfunc(countw(&nowout));  /* number of vbls from which we are selecting */
+%do i=1 %to &_nno_;
+     %let _instat&i = 0;
+       %let _vvn_&i  = %scan(&nowout, &i, %str( ));
+      %let _vvnn_&i = "&&_vvn_&i";
+%end;
+%end;
+   
+   
+%macro mknowinout;
+ /* makes nowin, nowout lists */
+%let nowin=;  %let nowout=;
+%do i=1 %to &_nno_;
+   %if &&_instat&i eq 1 %then %do;  %let nowin = &nowin &&_vvn_&i ;  %end;
+   %else %do;  %let nowout = &nowout &&_vvn_&i ;  %end;
+%end;
+%if %length(&nowin) eq 0 %then %do;  %let _nin_ = 0;  %end;
+%else %do;  %let _nin_ = %sysfunc(countw(&nowin));  %end;
+%if %length(&nowout) eq 0 %then %do;  %let _nout_ = 0;  %end;
+%else %do;  %let _nout_ = %sysfunc(countw(&nowout));  %end;
+%mend;
+
+
+%let _nstep = 0;
+%let _fin_ = 0 ;
+%let updone = 0 ;  %let dndone = 0 ;
+
+data _cuc__;  
+   set &data; 
+   run;
+   
+ /*********************************************************************/
+ /********************************************************************/   
+ /** step 1: forward selection one possible var. from NOWOUT list  **/
+ /*U*/ %up:
+ /*U*/ /*********************************************************************/
+       /*U*/ /********************************************************************/   
+ /*U*/  
+ /*U*/ %if &notes ne NOTES %then %do; ods listing close; %end;
+ /*U*/    
+%if &updone eq 1 and &dndone eq 1 %then %do;  %let _fin_ = 1;  %end;
+ /*U*/ %if &_fin_ eq 1 %then %goto mfinish;
+ /*U*/       
+   
+%mknowinout;
+   
+ /*U*/ /* check whether there are any variables with instat=0 */   
+ /*U*/ /** if there are no var. on the list to select from **/
+%if &_nout_ eq 0 %then %do;  %let updone = 1 ;  %end;
+ /*U*/ %if &updone eq 1 %then %do;
+ /*U*/   ods listing;
+ /*U*/    data _null_;
+ /*U*/     put "step &_nstep:  no variables to add";  
+ /*U*/     file print;  
+ /*U*/     put "step &_nstep:  no variables to add";  
+ /*U*/    run;
+ /*U*/     
+ /*U*/   %if &notes ne NOTES %then %do; ods listing close; %end;
+ /*U*/   
+ /*U*/   %end;
+ /*U*/  %if &updone=1 %then %goto down;
+ /*U*/ *-------------------------------------------------------------------;   
+       /*U*/ /* if there are vbls in the possible selection var. list (nowout list), 
+ /*U*/    /* then add each of them to get loglikelihood ratio; then compare with 
+ /*U*/    /* the baseline model, i.e., without this variable: if it is <= SLSENTRY
+ /*U*/    /* level, the corresponding variable is added to the nowin list. 
+   
+ /*U*/   /*  second step: for the model with the newly added var., check each var.
+ /*U*/   /*  in the nowin list if it should be deleleted from the model by comparing 
+ /*U*/   /*  the model without this var.: if it is > SLSTAY level, then drop it.
+ /*U*/   
+ /*U*/   /*  continue to do so until there is no more var. to be added or dropped.
+ /*U*/ 
+    
+    
+ /*U*/ %if "&updone" ne "1" %then %do;
+ /*U*/    %if &notes ne NOTES %then %do;  ods listing close;  %end;
+    
+ /*U*/ /** step 1: forward selection one var. with smallest p-value among 
+ /*U*/     /* all the vbls with instat=0 **/
+ /*U*/    
+   
+ /*U*/ /* getting baseline likelihood */
+   
+ /*U*/    %if &notes ne NOTES %then %do; ods listing close; %end;;
+
+proc phreg data=_cuc__ ;
+  %if &andgill eq F %then %do;
+    model &time*&event(0) = &adj &nowin;
+  %end;
+  %if &andgill eq T %then %do;  model (&agt1 , &agt2 ) * &event (0) = &adj &nowin ;  %end;
+   %if %length(&strata) ne 0 %then %do;  strata &strata;  %end;
+ /*U*/   ods output  ConvergenceStatus=convstat fitstatistics=fitstat;
+run;
+ /*U*/    
+ /*U*/    /* check for convergence of baseline model */
+ /*U*/    ods listing;
+ /*U*/    data _null_ ;  
+ /*U*/      set convstat;  
+ /*U*/      retain nonconv 0;
+ /*U*/      if status ne 0 then nonconv=1;
+ /*U*/      call symput('noconv', trim(left(nonconv)));
+ /*U*/    run;
+   
+ /*U*/    %if &noconv eq 1 %then %do;
+ /*U*/    data _null_;
+ /*U*/          put "model with variables &adj &nowin did not converge.";
+ /*U*/       file print;
+ /*U*/          put "model with variables &adj &nowin did not converge.";
+ /*U*/       run;
+ /*U*/       %if &notes ne NOTES %then %do; ods listing close;  %end; 
+ /*U*/         %let updone = 1;
+ /*U*/       %end;
+ /*U*/    
+   
+ /*U*/   /* if baseline model converged */
+ /*U*/   %if &noconv eq 0 %then  %do;
+ /*U*/   data _llb_;  
+ /*U*/     set fitstat;  
+ /*U*/     if upcase(criterion) eq '-2 LOG L';
+ /*U*/     llb=withcovariates;
+ /*U*/     keep llb;   /** baseline -2 LOG L **/
+ /*U*/     run;
+ /*U*/      %end;
+   
+   
+ /*U*/    
+ /*U*/ ********************************************************************;  
+ /*U*/ %if &notes ne NOTES %then %do; ods listing close; %end;
+ /*U*/ %if &noconv eq 0 %then %do;
+ /*U*/ %do i=1 %to &_nno_;
+ /*U*/   %if &&_instat&i eq 0 %then %do;
+ /*U*/       %if &notes ne NOTES %then %do;  ods listing close;  %end;
+ /*U*/    /* run phreg with this vbl in */
+ /*U*/       proc phreg data=_cuc__  ;      
+ /*U*/          %if &andgill eq F %then %do;
+ /*U*/            model &time*&event(0) = &adj  &nowin
+ /*U*/          %end;
+ /*U*/          %if &andgill eq T %then %do;  model (&agt1 , &agt2 ) * &event = &adj &nowin ;  %end;
+ /*U*/      %scan(&nowout, &i, %str( )) ;
+   %if %length(&strata) ne 0 %then %do;  strata &strata;  %end;
+ /*U*/       ods output fitstatistics=fitstat  convergencestatus=convstat;  
+ /*U*/       run;
+ /*U*/       
+ /*U*/ data convstat;  set convstat;
+/*U*/        retain noconv 0;
+ /*U*/       if status ne 0 then noconv=1;
+ /*U*/       call symput('noconv', trim(left(noconv)));
+ /*U*/       run;
+    
+ /*U*/   %if &noconv eq 1 %then %do; data _ll_&i;  ll&i=.;  run;  %end;
+ /*U*/      %else %do;
+ /*U*/       /* keep and name the log lik with this vbl in */
+ /*U*/       data _ll_&i;  
+ /*U*/          set fitstat;
+ /*U*/ 	 if upcase(criterion) eq '-2 LOG L';
+ /*U*/ 	 ll&i = withcovariates;
+ /*U*/          keep ll&i; /** -2 LOG L for the model with one more var. **/
+ /*U*/ 	 run;
+    
+ /*U*/        %end;  /* end of  %else part */
+ /*U*/    
+ /*U*/     %end;  /* end of instat&i eq 0 */
+ /*U*/    %else %do;  data _ll_&i;  ll&i=.;  run;  %end;
+ /*U*/   %end;  /* end of loop on i: do i=1 %to &_nno_; */
+ /*U*/       
+ /*U*/ ods listing;
+ /*U*/ %let nvni = ;
+ /*U*/ data _ll_;  
+ /*U*/    merge  _llb_     %do i=1 %to &_nno_;  _ll_&i  %end;  ;
+ /*U*/    updone=1;
+ /*U*/    length nvnam $20 ;  nvnam=' ';
+	 /*U*/   /** to avoid confusion, use the abs(lli-llb) and get the biggest diff **/
+ /*U*/    dll=0;
+ /*U*/    %do i=1 %to &_nno_;
+ /*U*/       if ll&i ne . and abs(ll&i - llb) ge dll then do;
+ /*U*/ 	        dll=abs(ll&i - llb);  nvni=&i;  
+                nvnam=&&_vvnn_&i;
+ /*U*/ 	 end;
+ /*U*/       %end;
+put  dll= nvni=;
+ /*U*/      /* this is a macro vbl of the number of the newly added vbl */
+ /*U*/      call symput('_nvni_', trim(left(nvni)));
+ /*U*/     run;
+ /*U*/    
+ /*U*/    
+ /*U*/   data _ll_;  set _ll_;
+ /*U*/   if dll gt 0 then p=1-probchi(dll, 1);
+ /*U*/      else p=1;
+ /*U*/    
+ /*U*/   if . lt  p lt &_pin then do;
+ /*U*/       /* these are the number and name of the potential new vbl */
+ /*U*/       updone=0;
+ /*U*/       put "step  &_nstep :  variable  &&_vvn_&_nvni_  added";
+ /*U*/       call symput("_instat&_nvni_", 1);
+ /*U*/    call symput ('_nvni_', nvni);
+ /*U*/    call symput ('_nvnami_', nvnam);
+put '********' nvni nvnam p ;
+ /*U*/       end;
+ /*U*/    else do;
+ /*U*/       put "step  &_nstep :   no variable added";
+ /*U*/       end;
+ /*U*/    file print;
+ /*U*/    if . lt  p lt &_pin then do;
+    /*U*/       /* these are the number and name of the potential new vbl */
+  /*U*/       put "step  &_nstep :  variable &&_vvn_&_nvni_  added";
+  /*U*/       end;
+ /*U*/    else do;
+ /*U*/       put "step  &_nstep :   no variable added";
+ /*U*/        updone=1;
+ /*U*/       end;
+ /*U*/    call symput ('updone', updone);
+ /*U*/    run;
+ /*U*/    
+ /*U*/ %mknowinout;
+ /*U*/       
+ /*U*/    proc datasets nolist;  delete   _llb_ _ll_
+ /*U*/      %do i=1 %to &_nno_;  _ll_&i  %end;  ;
+ /*U*/       run;
+    
+    
+  /*U*/ %end;  /* end of  baseline model converged */
+   
+  /*U*/ %end;  /* end of  updone ne 1 */
+   
+ /*U*/ *-------------------------------------------------------------------;   
+ /*U*/ %*put _local_;
+   
+ /*U*/ data _null_;  
+ /*U*/    nstep=&_nstep;  
+ /*U*/    nstep=nstep+1;  
+ /*U*/    maxstep=&maxstep;
+ /*U*/    fin=0;
+ /*U*/    if nstep > maxstep then fin=1;
+ /*U*/    call symput ("_fin_", fin);
+ /*U*/    call symput("_nstep", trim(left(nstep)));
+ /*U*/    run;
+   
+ /*U*/ %*put _local_;
+   
+ /*U*/ %if &_fin_ eq 1  %then %goto mfinish;
+ /*U*/ %else %if &updone eq 1 %then %goto dfinish;
+ /*U*/    %else %do;
+ /*U*/    %goto down;
+ /*U*/  %end;
+   
+ /*********************************************************************/
+ /********************************************************************/ 
+ /** step 2: backward elimination possible var. from NOWIN list  **/  
+%down:  
+ /*********************************************************************/
+ /********************************************************************/   
+ /*D*/    
+       /*D*/ /* check whether nowin is null */   
+ /*D*/ %if &_nin_ eq 0  %then %do;  
+ /*D*/    %let dndone=1;
+ /*D*/    ods listing;
+ /*D*/    data _null_;
+ /*D*/    put "step &_nstep :    no variables to eliminate";
+ /*D*/    file print;
+ /*D*/    put "step &_nstep :    no variables to eliminate";
+ /*D*/    run;
+ /*D*/   %if &notes ne NOTES %then %do;
+ /*D*/     ods listing close;
+ /*D*/   %end;
+    
+ /*D*/ %end;
+   
+   
+   
+ /*D*/ /** if there is no more var. in &nowout and &nowin, then stop **/
+ /*D*/ %if &updone eq 1 and &dndone eq 1 %then %goto dfinish;
+   
+ /*D*/ /** if there are no var. in &nowin, but do have in &nowout, then go up **/
+ /*D*/  %if &_nout_ ne 0 %then %goto up;
+   
+ /*D*/ %if &dndone eq 0 and &_nin_ ne 0  %then %do;
+ /*D*/    
+    
+ /*D*/     /* get baseline likelihood */
+ /*D*/   %if &notes ne NOTES %then %do;
+ /*D*/      ods listing close;
+ /*D*/     %end;  /* end of %if &notes ne NOTES */
+ /*D*/     
+ /*D*/       
+ /*D*/   proc phreg  data=_cuc__ ;
+ /*D*/       %if &andgill eq F %then %do;  model &time*&event(0)= &adj &nowin;  %end;
+ /*D*/       %if &andgill eq T %then %do;  model (&agt1 , &agt2 )*&event(0)= &adj &nowin;  %end;
+   %if %length(&strata) ne 0 %then %do;  strata &strata;  %end;
+ /*D*/      ods output fitstatistics=fitstat convergencestatus=convstat;  
+ /*D*/     run;
+ /*D*/   
+ /*D*/   data convstat;  
+ /*D*/       set convstat;
+ /*D*/       retain noconv 0;
+ /*D*/       if status ne 0 then noconv=1;
+ /*D*/       call symput('noconv', trim(left(noconv)));
+ /*D*/       run;
+    
+ /*D*/  
+ /*D*/    %if &noconv eq 1 %then %do;
+ /*D*/ *********************************************;
+ /*D*/ 	 ods listing;
+ /*D*/ 	 data _null_;
+ /*D*/ 	 put "step &_nstep:   model with variables &adj &nowin did not converge";
+ /*D*/ 	 file print;
+ /*D*/ 	 put "step &_nstep:   model with variables &adj &nowin did not converge";
+ /*D*/ 	 run;
+ /*D*/      %if &notes ne NOTES %then %do;
+ /*D*/      ods listing close;
+ /*D*/ 	%end; /* end of  %if &notes ne NOTES */
+ /*D*/      
+ /*D*/   %end; /* end of   %if &noconv eq 1 */      
+ /*D*/  
+ /*D*/ ********************************************;
+ /*D*/      
+ /*D*/ %if &noconv eq 0 %then %do;  /* baseline model converged */   
+    
+    
+ /*D*/ data _llb_;  set fitstat;
+ /*D*/    if upcase(criterion) eq '-2 LOG L';
+ /*D*/    llb=withcovariates;
+ /*D*/    keep llb;
+ /*D*/    run;
+ /*D*/  
+/*D*/    
+/*D*/     
+/*D*/    
+/*D*/    %do i=1 %to &_nno_;
+/*D*/       %if &&_instat&i eq 1 %then %do;
+/*D*/ 	 %if &notes ne NOTES %then %do;  ods listing close ;  %end;
+/*D*/ 	 
+/*D*/ 	 proc phreg data=_cuc__ ;
+/*D*/ 	 %if &andgill eq F %then %do;  model &time*&event(0)=   %end;
+/*D*/ 	 %if &andgill eq T %then %do;  model (&agt1 , &agt2 )*&event(0)=   %end;
+/*D*/       &adj
+/*D*/ 	    %do j=1 %to &_nno_;
+/*D*/ 	       %if &j ne &i  and &&_instat&j eq 1 %then %do;  &&_vvn_&j  %end;
+/*D*/ 	       %end;
+/*D*/ 	 ;
+   %if %length(&strata) ne 0 %then %do;  strata &strata;  %end;
+/*D*/ 	 ods output  fitstatistics=fitstat convergencestatus=convstat;  
+/*D*/ run;
+/*D*/ 	 
+/*D*/ 	 data convstat;  set convstat;
+/*D*/ 	 retain noconv 0;
+/*D*/ 	 if status ne 0 then noconv=1;
+/*D*/ 	 call symput ('noconv', trim(left(noconv)));
+/*D*/ 	 run;
+/*D*/ 	 
+/*D*/ 	 
+/*D*/ 	 %if &noconv eq 1 %then %do;
+/*D*/ 	    data _ll_&i;  ll&i=.;  run;
+/*D*/ 	    %end;
+/*D*/ 	 
+/*D*/ 	 %if &noconv eq 0 %then %do;
+/*D*/ 	    data _ll_&i;  set fitstat;
+/*D*/ 	    if upcase(criterion) eq '-2 LOG L';
+/*D*/ 	    ll&i=withcovariates;
+/*D*/ 	    keep ll&i;
+/*D*/ 	    run;
+/*D*/ 	    %end;
+/*D*/ 	  %end;  /** end of instat&i = 1 */
+/*D*/    %else %do;  /* instat&i = 0 */
+/*D*/       data _ll_&i;  ll&i = .;  run;
+/*D*/       %end;
+/*D*/ 	      %end;  /* end of loop on i */
+/*D*/     
+/*D*/     
+/*D*/     
+/*D*/    
+
+/*D*/     ods listing;
+/*D*/     data _ll_;  merge _llb_ 
+/*D*/        %do i=1 %to &_nno_;  _ll_&i  %end;  ;
+/*D*/     length nameout $20 ;
+/*D*/     dll=1000000;
+/*D*/     %do i=1 %to &_nno_;
+/*D*/        if ll&i ne . and abs(ll&i - llb) le dll then do;
+/*D*/ 	  dll=abs(ll&i - llb);
+/*D*/ 	  numout=&i;  
+/*D*/ 	  nameout=&&_vvnn_&i;
+/*D*/           end;
+/*D*/        %end;
+/*D*/     call symput('_nvno_', trim(left(numout)));
+/*D*/     run;
+/*D*/     
+/*D*/     
+/*D*/     data _ll_;  set _ll_;
+/*D*/     if dll gt 0 then pout=1-probchi(abs(dll), 1);
+/*D*/     if pout gt &_pout then do;
+/*D*/        put "step &_nstep :  "  'variable ' nameout ' dropped';
+/*D*/        call symput("_instat&_nvno_", 0);
+/*D*/        dndone=0;
+/*D*/        end;
+/*D*/     else do;
+/*D*/        put "step &_nstep :  no variable dropped";
+/*D*/        dndone=1;
+/*D*/        end;
+/*D*/     file print;
+/*D*/     if pout gt &_pout then do;
+/*D*/        put "step &_nstep :  "  'variable ' nameout ' dropped';
+/*D*/        end;
+/*D*/     else do;
+/*D*/        put "step &_nstep :  no variable dropped";
+/*D*/        end;
+/*D*/     call symput ('dndone', dndone);
+/*D*/     run;
+/*D*/     %mknowinout;
+/*D*/     
+/*D*/ proc datasets nolist;  
+/*D*/    delete _llb_ _ll_
+/*D*/       %do i=1 %to &_nno_;  
+/*D*/ 	 _ll_&i  %end; ;
+/*D*/    run;
+/*D*/    
+/*D*/ data _null_;  nstep=&_nstep;  nstep=nstep+1;  maxstep=&maxstep;
+/*D*/    fin=0;
+/*D*/    if nstep ge maxstep then fin=1;
+/*D*/    call symput ('_fin_', fin);
+/*D*/    call symput ('_nstep', trim(left(nstep)));
+/*D*/    run;
+/*D*/    
+/*D*/ %end;  /* baseline model converged */
+/*D*/ ***********************************************************;
+
+
+/*D*/ %if &dndone eq 0 %then %goto down;
+/*D*/ %if &dndone eq 1 and &updone eq 0 %then %goto up;
+
+/*D*/ %end;  /* end of else do -- nowin not null*/
+
+   
+  /***********/
+%if &_fin_ eq 1 %then %goto mfinish;
+   
+%else %if &dndone eq 1 and &updone eq 1 %then %goto dfinish;
+   
+%else %do; %goto up; %end;
+
+  /**************/
+%mfinish:  
+data _null_;  
+   put "stepwise procedure stopped because it hit the maximum step number, &maxstep.";
+   file print;
+   put "stepwise procedure stopped because it hit the maximum step number, &maxstep.";
+   run;
+%goto finish;
+   
+/************/
+%dfinish:
+data _null_;  
+   put 'stepwise procedure cannot add or delete more variables.';
+   file print;
+   put 'stepwise procedure cannot add or delete more variables.';
+   run;
+
+  
+ /*************/
+/*************/
+%finish:  quit;
+
+%if &called eq 0 %then %do;
+ 
+options notes;
+ods listing;
+%put @5 Final model variables: ;
+%put @5 &adj;
+%put @5 &nowin;
+
+%if %length(&adj) ne 0 or %length(&nowin) ne 0 %then %do;
+ /**  
+    title5 "    Final model variables";
+    
+%if %length(&adj) ne 0  %then %do;      
+    title6 "    Adjusted for:  &adj";
+%end;
+   
+**/
+%if %length(&nowin) ne 0 %then %do;
+   * title7 "    Selected:  &nowin";
+   %if &notes ne NOTES %then %do; ods listing close; %end;
+   proc phreg  data=&data  covout outest=_ests_(keep=&nowin &incl intercept _lnlike_ _type_ _name_) ;
+      %if &andgill eq F %then %do;  model &time*&event(0)=&adj &nowin &incl;   %end;
+      %if &andgill eq T %then %do;  model (&agt1 , &agt2 )*&event(0)=&adj &nowin &incl;   %end;
+   %if %length(&strata) ne 0 %then %do;  strata &strata;  %end;
+  
+         output out=_models_(keep= &nowin &case &adj _level_ prob splntran lowerprb upperprb) 
+           prob=prob xbeta=splntran lower=lowerprb  upper=upperprb;
+      run;
+      %end;
+   run;
+
+%end;
+   
+   
+ods listing;  
+proc print data=_ests_;  
+run;
+   
+proc datasets nolist;  
+delete _cuc__ ;  
+run;
+
+%end;
+
+%goto _end;
+ 
+%dfinish2:
+data _null_;  
+   put 'WARN''ING: You have to at least provide one var. to select from';
+   file print;
+   put 'WARN''ING: You have to at least provide one var. to select from';
+   run;  
+  %goto _end;
+
+%mfinish2:
+  data _null_;
+  put 'ERR''OR in macro run:  Since there are no covariates other than those being tested,';
+  put '     the macro was unable to fit the baseline model.';
+  file print;
+  put 'ERR''OR in macro run:  Since there are no covariates other than those being tested,';
+  put '     the macro was unable to fit the baseline model.';
+  run;
+
+%_end:  quit;
+%mend;
+
+%macro lstep8(data=, nowout=,  adj=, _pin=.05, _pout=.05, case=, incl=&exposure,
+	      maxstep=10, notes=nonotes, k=3, called=0, noprint=t);
+   
+   
+ /**************************************************************************************  
+  data    data set used
+  case    name of case vbl
+  nowin   list of variables already in model
+  nowout  list of variables to select from
+  adj     list of adjusters
+  _pin    p value for adding variable
+  _pout   p value for dropping variable
+  incl    vbl to be included in printout of final model
+  **************************************************************************************/
+%let notes=%upcase(&notes);
+%let noprint=%upcase(&noprint);
+   options &notes;
+   
+%let adj=&adj &incl;
+   
+%if %length(&nowout) eq 0  %then %goto dfinish2;
+   
+%global nowin; 
+%let nowin= ;
+   
+%local dndone updone _nstep _fin_  _fdl _nt
+   i _nvni_ _nvnami_ _nout_  _nno_
+   j _nin_ _nout_ _nvno_ _nvnamo_ ;
+   
+ /** getoption is a system function to get value of formdlim and notes **/
+%let _fdl = %sysfunc(getoption(formdlim));
+%let _nt = %sysfunc(getoption(notes));
+   
+%if %length(&nowout) eq 0 %then %do;  %let _nno_ = 0;  %end;
+%else %do;  %let _nno_ = %sysfunc(countw(&nowout));  %end;  /* number of vbls from which we are selecting */
+%do i=1 %to &_nno_;
+     %let _instat&i = 0;
+       %let _vvn_&i  = %scan(&nowout, &i, %str( ));
+      %let _vvnn_&i = "&&_vvn_&i";
+%end;
+   
+   
+%macro mknowinout;
+ /* makes nowin, nowout lists */
+%let nowin=;  %let nowout=;
+%do i=1 %to &_nno_;
+   %if &&_instat&i eq 1 %then %do;  %let nowin = &nowin &&_vvn_&i ;  %end;
+   %else %do;  %let nowout = &nowout &&_vvn_&i ;  %end;
+%end;
+%if %length(&nowin) eq 0 %then %do;  %let _nin_ = 0;  %end;
+%else %do;  %let _nin_ = %sysfunc(countw(&nowin));  %end;
+%if %length(&nowout) eq 0 %then %do;  %let _nout_ = 0;  %end;
+%else %do;  %let _nout_ = %sysfunc(countw(&nowout));  %end;
+%mend;
+
+
+%let _nstep = 0;
+%let _fin_ = 0 ;
+%let updone = 0 ;  %let dndone = 0 ;
+
+data _cuc__;  
+   set &data; 
+   run;
+   
+ /*********************************************************************/
+ /********************************************************************/   
+ /** step 1: forward selection one possible var. from NOWOUT list  **/
+ /*U*/ %up:
+ /*U*/ /*********************************************************************/
+       /*U*/ /********************************************************************/   
+ /*U*/  
+ /*U*/ %if &notes ne NOTES %then %do; ods listing close; %end;
+ /*U*/    
+%if &updone eq 1 and &dndone eq 1 %then %do;  %let _fin_ = 1;  %end;
+ /*U*/ %if &_fin_ eq 1 %then %goto mfinish;
+ /*U*/       
+   
+%mknowinout;
+   
+ /*U*/ /* check whether there are any variables with instat=0 */   
+ /*U*/ /** if there are no var. on the list to select from **/
+%if &_nout_ eq 0 %then %do;  %let updone = 1 ;  %end;
+ /*U*/ %if &updone eq 1 %then %do;
+ /*U*/   ods listing;
+ /*U*/    data _null_;
+ /*U*/     put "Step &_nstep:  no variables to add";  
+ /*U*/     file print;  
+ /*U*/     put "Step &_nstep:  no variables to add";  
+ /*U*/    run;
+ /*U*/     
+ /*U*/   %if &notes ne NOTES %then %do; ods listing close; %end;
+ /*U*/   
+ /*U*/   %end;
+ /*U*/  %if &updone=1 %then %goto down;
+ /*U*/ *-------------------------------------------------------------------;   
+       /*U*/ /* if there are vbls in the possible selection var. list (nowout list), 
+ /*U*/    /* then add each of them to get loglikelihood ratio; then compare with 
+ /*U*/    /* the baseline model, i.e., without this variable: if it is <= SLSENTRY
+ /*U*/    /* level, the corresponding variable is added to the nowin list. 
+   
+ /*U*/   /*  second step: for the model with the newly added var., check each var.
+ /*U*/   /*  in the nowin list if it should be deleleted from the model by comparing 
+ /*U*/   /*  the model without this var.: if it is > SLSTAY level, then drop it.
+ /*U*/   
+ /*U*/   /*  continue to do so until there is no more var. to be added or dropped.
+ /*U*/ 
+    
+    
+ /*U*/ %if "&updone" ne "1" %then %do;
+ /*U*/    %if &notes ne NOTES %then %do;  ods listing close;  %end;
+    
+ /*U*/ /** step 1: forward selection one var. with smallest p-value among 
+ /*U*/     /* all the vbls with instat=0 **/
+ /*U*/    
+   
+ /*U*/ /* getting baseline likelihood */
+   
+ /*U*/    ods listing close;
+
+proc logistic data=_cuc__ descending;  model &case = &adj &nowin;
+ /*U*/   ods output  ConvergenceStatus=convstat fitstatistics=fitstat  parameterestimates=parmest ;
+run;
+ /*U*/    
+ /*U*/    /* check for convergence of baseline model */
+ /*U*/    ods listing;
+ /*U*/    data _null_ ;  
+ /*U*/      set convstat;  
+ /*U*/      retain nonconv 0;
+ /*U*/      if status ne 0 then nonconv=1;
+ /*U*/      call symput('noconv', trim(left(nonconv)));
+ /*U*/    run;
+   
+ /*U*/    %if &noconv eq 1 %then %do;
+          ods listing;
+ /*U*/    data _null_;
+ /*U*/          put "model with variables &adj &nowin did not converge.";
+ /*U*/       file print;
+ /*U*/          put "model with variables &adj &nowin did not converge.";
+ /*U*/       run;
+ /*U*/       ods listing close;
+ /*U*/         %let updone = 1;
+ /*U*/       %end;
+ /*U*/    
+   
+ /*U*/   /* if baseline model converged */
+ /*U*/   %if &noconv eq 0 %then  %do;
+           %if &notes eq NOTES %then %do;
+             ods listing;  proc print data=parmest;  run;  ods listing close;  %end;
+ /*U*/   data _llb_;  
+ /*U*/     set fitstat;  
+ /*U*/     if upcase(criterion) eq '-2 LOG L';
+ /*U*/     llb=interceptandcovariates;
+ /*U*/     keep llb;   /** baseline -2 LOG L **/
+ /*U*/     run;
+ /*U*/      %end;
+   
+   
+ /*U*/    
+ /*U*/ ********************************************************************;  
+ /*U*/ ods listing close;
+ /*U*/ %if &noconv eq 0 %then %do;
+ /*U*/ %do i=1 %to &_nno_;
+ /*U*/   %if &&_instat&i eq 0 %then %do;
+ /*U*/       ods listing close;
+ /*U*/    /* run logistic with this vbl in */
+ /*U*/       proc logistic data=_cuc__ descending ;      
+ /*U*/          model &case = &adj  &nowin
+ /*U*/      %scan(&nowout, &i, %str( )) ;
+ /*U*/       ods output fitstatistics=fitstat  convergencestatus=convstat  parameterestimates=parmest;  
+ /*U*/       run;
+ /*U*/       
+ /*U*/ data convstat;  set convstat;
+ /*U*/       retain noconv 0;
+ /*U*/       if status ne 0 then noconv=1;
+ /*U*/       call symput('noconv', trim(left(noconv)));
+ /*U*/       run;
+    
+ /*U*/   %if &noconv eq 1 %then %do; data _ll_&i;  ll&i=.;  run;  %end;
+ /*U*/      %else %do;
+               %if &notes eq NOTES %then %do;
+                 ods listing;  proc print data=parmest;  run;  ods listing close;  %end;
+ /*U*/       /* keep and name the log lik with this vbl in */
+ /*U*/       data _ll_&i;  
+ /*U*/          set fitstat;
+ /*U*/ 	 if upcase(criterion) eq '-2 LOG L';
+ /*U*/ 	 ll&i = interceptandcovariates;
+ /*U*/          keep ll&i; /** -2 LOG L for the model with one more var. **/
+ /*U*/ 	 run;
+    
+ /*U*/        %end;  /* end of  %else part */
+ /*U*/    
+ /*U*/     %end;  /* end of instat&i eq 0 */
+ /*U*/    %else %do;  data _ll_&i;  ll&i=.;  run;  %end;
+ /*U*/   %end;  /* end of loop on i: do i=1 %to &_nno_; */
+ /*U*/       
+ /*U*/ ods listing;
+ /*U*/ %let nvni = ;
+ /*U*/ data _ll_;  
+ /*U*/    merge  _llb_     %do i=1 %to &_nno_;  _ll_&i  %end;  ;
+ /*U*/    updone=1;
+ /*U*/    length nvnam $20 ;  nvnam='  ';
+	 /*U*/   /** to avoid confusion, use the abs(lli-llb) and get the biggest diff **/
+ /*U*/    dll=0;
+ /*U*/    %do i=1 %to &_nno_;
+ /*U*/       if ll&i ne . and abs(ll&i - llb) ge dll then do;
+ /*U*/ 	        dll=abs(ll&i - llb);  nvni=&i;  
+ /*U*/ 	 end;
+ /*U*/       %end;
+ /*U*/      /* this is a macro vbl of the number of the newly added vbl */
+ /*U*/      call symput('_nvni_', trim(left(nvni)));
+ /*U*/     run;
+ /*U*/    
+ /*U*/    
+ /*U*/   data _ll_;  set _ll_;
+ /*U*/   if dll gt 0 then p=1-probchi(dll, 1);
+ /*U*/      else p=1;
+ /*U*/    
+ /*U*/   if . lt  p lt &_pin then do;
+ /*U*/       /* these are the number and name of the potential new vbl */
+ /*U*/       updone=0;
+ /*U*/       put "Step  &_nstep :  variable  &&_vvn_&_nvni_  added";
+ /*U*/       call symput("_instat&_nvni_", 1);
+ /*U*/    call symput ('_nvni_', nvni);
+ /*U*/    call symput ('_nvnami_', nvnam);
+put '********' nvni nvnam p ;
+ /*U*/       end;
+ /*U*/    else do;
+ /*U*/       put "Step  &_nstep :   no variable added";
+ /*U*/       end;
+ /*U*/    file print;
+ /*U*/    if . lt  p lt &_pin then do;
+    /*U*/       /* these are the number and name of the potential new vbl */
+  /*U*/       put "Step  &_nstep :  variable &&_vvn_&_nvni_  added";
+  /*U*/       end;
+ /*U*/    else do;
+ /*U*/       put "Step  &_nstep :   no variable added";
+ /*U*/        updone=1;
+ /*U*/       end;
+ /*U*/    call symput ('updone', updone);
+ /*U*/    run;
+ /*U*/    
+ /*U*/ %mknowinout;
+ /*U*/       
+ /*U*/    proc datasets nolist;  delete   _llb_ _ll_
+ /*U*/      %do i=1 %to &_nno_;  _ll_&i  %end;  ;
+ /*U*/       run;
+    
+    
+  /*U*/ %end;  /* end of  baseline model converged */
+   
+  /*U*/ %end;  /* end of  updone ne 1 */
+   
+ /*U*/ *-------------------------------------------------------------------;   
+ /*U*/ %*put _local_;
+   
+ /*U*/ data _null_;  
+ /*U*/    nstep=&_nstep;  
+ /*U*/    nstep=nstep+1;  
+ /*U*/    maxstep=&maxstep;
+ /*U*/    fin=0;
+ /*U*/    if nstep > maxstep then fin=1;
+ /*U*/    call symput ("_fin_", fin);
+ /*U*/    call symput("_nstep", trim(left(nstep)));
+ /*U*/    run;
+   
+ /*U*/ %*put _local_;
+   
+ /*U*/ %if &_fin_ eq 1  %then %goto mfinish;
+ /*U*/ %else %if &updone eq 1 %then %goto dfinish;
+ /*U*/    %else %do;
+ /*U*/    %goto down;
+ /*U*/  %end;
+   
+ /*********************************************************************/
+ /********************************************************************/ 
+ /** step 2: backward elimination possible var. from NOWIN list  **/  
+%down:  
+ /*********************************************************************/
+ /********************************************************************/   
+ /*D*/    
+       /*D*/ /* check whether nowin is null */   
+ /*D*/ %if &_nin_ eq 0  %then %do;  
+ /*D*/    %let dndone=1;
+ /*D*/    ods listing;
+ /*D*/    data _null_;
+ /*D*/    put "Step &_nstep :    no variables to eliminate";
+ /*D*/    file print;
+ /*D*/    put "Step &_nstep :    no variables to eliminate";
+ /*D*/    run;
+ /*D*/   %if &notes ne NOTES %then %do;
+ /*D*/     ods listing close;
+ /*D*/   %end;
+    
+ /*D*/ %end;
+   
+   
+   
+ /*D*/ /** if there is no more var. in &nowout and &nowin, then stop **/
+ /*D*/ %if &updone eq 1 and &dndone eq 1 %then %goto dfinish;
+   
+ /*D*/ /** if there are no var. in &nowin, but do have in &nowout, then go up **/
+ /*D*/  %if &_nin_ eq 0 and  &_nout_ ne 0 %then %goto up;
+   
+ /*D*/ %if &dndone eq 0 and &_nin_ ne 0  %then %do;
+ /*D*/    
+    
+ /*D*/     /* get baseline likelihood */
+ /*D*/      ods listing close;
+ /*D*/     
+ /*D*/       
+ /*D*/   proc logistic  data=_cuc__ descending;
+ /*D*/     model &case= &adj &nowin;
+ /*D*/      ods output fitstatistics=fitstat convergencestatus=convstat parameterestimates=parmest ;  
+ /*D*/     run;
+ /*D*/   
+ /*D*/   data convstat;  
+ /*D*/       set convstat;
+ /*D*/       retain noconv 0;
+ /*D*/       if status ne 0 then noconv=1;
+ /*D*/       call symput('noconv', trim(left(noconv)));
+ /*D*/       run;
+    
+ /*D*/  
+ /*D*/    %if &noconv eq 1 %then %do;
+ /*D*/ *********************************************;
+ /*D*/ 	 ods listing;
+ /*D*/ 	 data _null_;
+ /*D*/ 	 put "Step &_nstep:   model with variables &adj &nowin did not converge";
+ /*D*/ 	 file print;
+ /*D*/ 	 put "Step &_nstep:   model with variables &adj &nowin did not converge";
+ /*D*/ 	 run;
+ /*D*/      ods listing close;
+ /*D*/      
+ /*D*/   %end; /* end of   %if &noconv eq 1 */      
+ /*D*/  
+ /*D*/ ********************************************;
+ /*D*/      
+ /*D*/ %if &noconv eq 0 %then %do;  /* baseline model converged */   
+    
+%if &notes eq NOTES %then %do;
+  ods listing;  proc print data=parmest;  run;  ods listing close;
+%end;
+    
+ /*D*/ data _llb_;  set fitstat;
+ /*D*/    if upcase(criterion) eq '-2 LOG L';
+ /*D*/    llb=interceptandcovariates;
+ /*D*/    keep llb;
+ /*D*/    run;
+ /*D*/  
+/*D*/    
+/*D*/     
+/*D*/    
+/*D*/    %do i=1 %to &_nno_;
+/*D*/       %if &&_instat&i eq 1 %then %do;
+/*D*/ 	 ods listing close;
+/*D*/ 	 
+/*D*/ 	 proc logistic data=_cuc__ descending;
+/*D*/ 	 model &case= &adj
+/*D*/ 	    %do j=1 %to &_nno_;
+/*D*/ 	       %if &j ne &i  and &&_instat&j eq 1 %then %do;  &&_vvn_&j  %end;
+/*D*/ 	       %end;
+/*D*/ 	 ;
+/*D*/ 	 ods output  fitstatistics=fitstat convergencestatus=convstat parameterestimates=parmest;  
+/*D*/ run;
+/*D*/ 	 
+/*D*/ 	 data convstat;  set convstat;
+/*D*/ 	 retain noconv 0;
+/*D*/ 	 if status ne 0 then noconv=1;
+/*D*/ 	 call symput ('noconv', trim(left(noconv)));
+/*D*/ 	 run;
+/*D*/ 	 
+/*D*/ 	 
+/*D*/ 	 %if &noconv eq 1 %then %do;
+/*D*/ 	    data _ll_&i;  ll&i=.;  run;
+/*D*/ 	    %end;
+/*D*/ 	 
+/*D*/ 	 %if &noconv eq 0 %then %do;
+%if &notes eq NOTES %then %do;
+  ods listing;  proc print data=parmest;  run;  ods listing close;
+%end;
+/*D*/ 	    data _ll_&i;  set fitstat;
+/*D*/ 	    if upcase(criterion) eq '-2 LOG L';
+/*D*/ 	    ll&i=interceptandcovariates;
+/*D*/ 	    keep ll&i;
+/*D*/ 	    run;
+/*D*/ 	    %end;
+/*D*/ 	  %end;  /** end of instat&i = 1 */
+/*D*/    %else %do;  /* instat&i = 0 */
+/*D*/       data _ll_&i;  ll&i = .;  run;
+/*D*/       %end;
+/*D*/ 	      %end;  /* end of loop on i */
+/*D*/     
+/*D*/     
+/*D*/     
+/*D*/    
+
+/*D*/     ods listing;
+/*D*/     data _ll_;  merge _llb_ 
+/*D*/        %do i=1 %to &_nno_;  _ll_&i  %end;  ;
+/*D*/     length nameout $20 ;
+/*D*/     dll=1000000;
+/*D*/     %do i=1 %to &_nno_;
+/*D*/        if ll&i ne . and abs(ll&i - llb) le dll then do;
+/*D*/ 	  dll=abs(ll&i - llb);
+/*D*/ 	  numout=&i;  
+/*D*/ 	  nameout=&&_vvnn_&i;
+/*D*/           end;
+/*D*/        %end;
+/*D*/     call symput('_nvno_', trim(left(numout)));
+/*D*/     run;
+/*D*/     
+/*D*/     
+ods listing;
+/*D*/     data _ll_;  set _ll_;
+/*D*/     if dll gt 0 then pout=1-probchi(abs(dll), 1);
+/*D*/     if pout gt &_pout then do;
+/*D*/        put "Step &_nstep :  "  'variable ' nameout ' dropped';
+/*D*/        call symput("_instat&_nvno_", 0);
+/*D*/        dndone=0;
+/*D*/        end;
+/*D*/     else do;
+/*D*/        put "Step &_nstep :  no variable dropped";
+/*D*/        dndone=1;
+/*D*/        end;
+/*D*/     file print;
+/*D*/     if pout gt &_pout then do;
+/*D*/        put "Step &_nstep :  "  'variable ' nameout ' dropped';
+/*D*/        end;
+/*D*/     else do;
+/*D*/        put "Step &_nstep :  no variable dropped";
+/*D*/        end;
+/*D*/     call symput ('dndone', dndone);
+/*D*/     run;
+ods listing close;
+/*D*/     %mknowinout;
+/*D*/     
+/*D*/ proc datasets nolist;  
+/*D*/    delete _llb_ _ll_
+/*D*/       %do i=1 %to &_nno_;  
+/*D*/ 	 _ll_&i  %end; ;
+/*D*/    run;
+/*D*/    
+/*D*/ data _null_;  nstep=&_nstep;  nstep=nstep+1;  maxstep=&maxstep;
+/*D*/    fin=0;
+/*D*/    if nstep ge maxstep then fin=1;
+/*D*/    call symput ('_fin_', fin);
+/*D*/    call symput ('_nstep', trim(left(nstep)));
+/*D*/    run;
+/*D*/    
+/*D*/ %end;  /* baseline model converged */
+/*D*/ ***********************************************************;
+
+
+/*D*/ %if &dndone eq 0 %then %goto down;
+/*D*/ %if &dndone eq 1 and &updone eq 0 %then %goto up;
+
+/*D*/ %end;  /* end of else do -- nowin not null*/
+
+   
+  /***********/
+%if &_fin_ eq 1 %then %goto mfinish;
+   
+%else %if &dndone eq 1 and &updone eq 1 %then %goto dfinish;
+   
+%else %do; %goto up; %end;
+
+  /**************/
+%mfinish:  
+data _null_;  
+   put "WARN''ING:  Stepwise procedure stopped because it hit the maximum step number, &maxstep.";
+   file print;
+   put "WARN''ING:  Stepwise procedure stopped because it hit the maximum step number, &maxstep.";
+   run;
+%goto finish;
+   
+/************/
+%dfinish:
+data _null_;  
+   file print;
+   put 'stepwise procedure cannot add or delete more variables.';
+   run;
+
+  
+ /*************/
+/*************/
+%finish:  quit;
+
+%if &called eq 0 %then %do;
+ 
+options notes;
+ods listing;
+%put @5 Final model variables: ;
+%put @5 &adj;
+%put @5 &nowin;
+
+%if %length(&adj) ne 0 or %length(&nowin) ne 0 %then %do;
+ /**  
+    title5 "    Final model variables";
+    
+%if %length(&adj) ne 0  %then %do;      
+    title6 "    Adjusted for:  &adj";
+%end;
+   
+**/
+%if %length(&nowin) ne 0 %then %do;
+   * title7 "    Selected:  &nowin";
+   %if &notes ne NOTES %then %do; ods listing close; %end;
+   proc logistic descending data=&data  covout outest=_ests_(keep=&nowin &incl intercept _lnlike_ _type_ _name_) ;
+      model &case=&adj &nowin &incl; 
+    %let kmid=%eval((&k+1)/2);    *use middle intercept for ordinal logistic;
+  
+         output out=_models_(keep= &nowin &case &adj _level_ prob splntran lowerprb upperprb) 
+           prob=prob xbeta=splntran lower=lowerprb  upper=upperprb;
+      run;
+      %end;
+   run;
+
+%end;
+   
+   
+ods listing;  
+run;
+   
+proc datasets nolist;  
+delete _cuc__ ;  
+run;
+
+%end;
+
+%goto _end;
+ 
+%dfinish2:
+data _null_;  
+   file print;
+   put 'WARN''ING: You have to at least provide one var. to select from';
+   
+   run;  
+
+%_end:  quit;
+%mend;
+
+%macro vls1;
+  %local i;
+  %global _nvl ;
+  %let _nvl = %sysfunc(countw(&vlabel));
+  %do i=1 %to &_nvl;  %global _vl_&i;  %let _vl_&i = %scan(&vlabel, &i, %str( ));  %end;
+%mend;
+
+%macro vls2;
+  %local i;
+  j=l
+  %do i=1 %to &_nvl;   "&&_vl_&i"    j=l  %end;
+  a=90
+%mend;
+
+%macro vls1i;
+  %local i;
+  %global _nvli_ ;
+  %let _nvli_ = %sysfunc(countw(&vlabeli));
+  %do i=1 %to &_nvli_;  %global _vl_&i;  %let _vl_&i = %scan(&vlabeli, &i, %str( ));  %end;
+%mend;
+
+%macro vls2i;
+  %local i;
+  j=l
+  %do i=1 %to &_nvli_;    "&&_vl_&i"    j=l  %end;
+  a=90
+%mend;
+
+%macro vls1p;
+  %local i;
+  %global _nvlp_ ;
+  %let _nvlp_ = %sysfunc(countw(&vlabelp));
+  %do i=1 %to &_nvlp_;  %global _vl_&i;  %let _vl_&i = %scan(&vlabelp, &i, %str( ));  %end;
+%mend;
+
+%macro vls2p;
+  %local i;
+  j=l
+  %do i=1 %to &_nvlp_;  "&&_vl_&i"    j=l  %end;
+  a=90
+%mend;
+%macro Lmakespl(splvbl=, nk=4, knot1=, notes=nonotes, outdat=_splstuf,
+       extrapoints=,
+       makepts=F, norm=2, data=, covar=, adjdat=, refval=, id=, longknots=f);
+
+/*************************************************
+  SPLVBL=variable to be 'splined',
+  NK=number of knots to use if KNOT1 is not given 
+     (default=4),
+  KNOT1=at least 3 knot points ,
+  --- MUST HAVE EITHER NK or KNOT1.----
+      If you provide KNOT1, NK is overridden.
+  DATA=dataset to use, 
+  COVAR=list of covariates (not including splvbl),
+  ADJDAT=a data set with one observation having all the
+         covariates with the values you want to use for plotting.
+         REQUIRED if you want to plot
+  MAKEPTS=T if you want to make plotting points 
+          F if you do not want to make plotting points (default)
+  REFVAL=<number>
+         You probably want to use some real value.
+         The macro prints out the values of the spline variables at the
+         REFVAL.
+         if REFVAL is outside the range of your data, you will get a
+         WARNING message, but it is harmless.
+         default= minimum value of SPLVBL
+
+The default name for the output data set of MAKESPL is  _splstuf.
+This data set contains all the observations and variables of DATA,
+PLUS "spline" variables for SPLVBL
+If you specify MAKEPTS=T (the default) you also get 501 plotting points with all these same
+variables, but values only for SPLVBL, the 'spline' variables, and ADJ.
+The spline variables are named 'splvbl'i, for i=1 to (nk-2).
+for example, if splvbl=fish, and nk=4, then the 'spline' variables are named
+fish1 and fish2.
+***********************************************************/
+/**********************************************************
+
+        norm=0 : no normalization of constructed variables
+        norm=1 : divide by cube of difference in last 2 knots
+                 makes all variables unitless
+        norm=2 : (default) divide by square of difference in outer knots
+                 makes all variables in original units of x
+
+	refval='reference value'
+
+   References:
+
+   Devlin TF, Weeks BJ (1986): Spline functions for logistic regression
+   modeling. Proc Eleventh Annual SAS Users Group International.
+   Cary NC: SAS Institute, Inc., pp. 646-51.
+
+   Stone CJ, Koo CY (1985): Additive splines in statistics. Proc Stat
+   Comp Sect Am Statist Assoc, pp. 45-8.
+
+   Stone CJ (1986): Comment, pp. 312-314, to paper by Hastie T. and
+   Tibshirani R. (1986): Generalized additive models. Statist
+   Sciences 1:297-318.
+
+   Author  : Frank E. Harrell, Jr.
+             Takima West Corporation
+             Clinical Biostatistics, Duke University Medical Center
+   modified by ellen hertzmark
+*******************************************************/
+
+%global  lowend hiend  lowfr hifr flag flagg;
+
+%local i j;
+
+%let flagg = 0 ;
+%let flag = 0 ;
+
+%LOCAL i j kji needknot nx lastds v v7 k tk tk1 t t1 k2 low hi slow shi kd ncovar  _lastds_ 
+kp1 kp2  _fdl _nt _sckn_   ijk ;
+%LOCAL _e_1 _e_2 _e_3 _e_4 _e_5 _e_6 _e_7 _e_8 _e_9;
+
+
+%*let _sckn_ = %scan(&knot1, 1, %str( ));
+
+
+%LET x=%SCAN(&splvbl,1,'"''');
+%let notes=%upcase(&notes);
+%let longknots=%upcase(&longknots);
+%let _fdl = %sysfunc(getoption(formdlim));
+%let _nt = %sysfunc(getoption(notes));
+
+
+%if %length(&covar) eq 0 %then %do;  %let ncovar = 0;  %end;
+%else %do;  %let ncovar=%sysfunc(countw(&covar));  %end;
+
+/* knot1 is null, no list of knot points given */
+%if %length(&knot1) eq 0 %then %do;
+  %LET lastds=&sysdsn; %IF &lastds^=_NULL_ %THEN
+    %LET lastds=%SCAN(&sysdsn,1).%SCAN(&sysdsn,2);
+  OPTIONS &notes;
+   data _null_;
+   nk=&nk;  flagg=0;
+    kp1=nk+1;  kp2=nk+2;
+    call symput('kp1', trim(left(kp1)));
+    call symput('kp2', trim(left(kp2)));
+   if nk ^in(3, 4, 5, 6, 7, 8, 9, 10, 17, 21, 25, 50)
+      then flagg=1;
+   call symput('flagg', flagg);
+   if flagg eq 1 then do;
+      put 'ERR''OR in macro call:  the number of knots, NK, must be one of the following numbers:';
+      put '        3, 4, 5, 6, 7, 8, 9, 10, 17, 21, 25, 50';
+      file print;
+      put 'ERR''OR in macro call:  the number of knots, NK, must be one of the following numbers:';
+      put '        3, 4, 5, 6, 7, 8, 9, 10, 17, 21, 25, 50';
+      
+     end;
+   run;
+
+%if &flagg eq 1 %then %goto outd;
+
+  PROC UNIVARIATE DATA=&data  NOPRINT;
+   VAR &splvbl; 
+   OUTPUT OUT=_stats_ pctlpts=
+        %IF &nk eq 3 %THEN 5 50 95 0 100 ;
+        %IF &nk eq 4 %THEN 5 35 65 95 0 100 ;
+        %IF &nk eq 5 %THEN 5 27.5 50 72.5 95 0 100 ;
+        %IF &nk eq 6 %THEN 5 23 41 59 77 95 0 100 ;
+        %IF &nk eq 7 %THEN 2.5 18.3333 34.1667 50 65.8333 81.6667 97.5 0 100 ;
+        %if &nk eq 8 %then 1 15 29 43 57 71 85 99 0 100 ;
+        %if &nk eq 9 %then 2 14 26 38 50 62 74 86 98 0 100 ;
+        %IF &nk eq 10 %THEN 2 12.6667 23.3333 34 44.6667 55.3333 66
+                         76.6667 87.3333 98  0 100 ;
+      %if &nk eq 17 %then 2 8 14 20 26 32 38 44 50 56 62 68 74 80 86 92 98 0 100 ;
+      %if &nk eq 21 %then 1 4 9 14 19 24 29 34 39 44 49 54 59 64 69 74 79 84 89 94 99 0 100 ;
+         %IF &nk eq 25 %then 2 6 10 14 18 22 26 30 34 38 42 46 50
+                          54 58 62 66 70 74 78 82 86 90 94 98  0 100 ;
+        %IF &nk eq 50 %then 1 3 5 7 9 11 13 15 17 19 21 23 25 27
+                         29 31 33 35 37 39 41 43 45 47 49 51
+                         53 55 57 59 61 63 65 67 69 71 73 75
+                         77 79 81 83 85 87 89 91 93 95 97 99  0 100 ;
+   PCTLPRE=x1 PCTLNAME=p1-p&kp2;
+
+
+
+DATA _NULL_;  
+   SET _stats_;
+   flag=0;
+  %*For knot points close to zero, set to zero;
+  ARRAY _kp_ _NUMERIC_;DO OVER _kp_;IF ABS(_kp_)<1E-9 THEN _kp_=0;END;
+  /* below has been fixed to allow for large nk leading to old version of knot1
+     having more than 200 characters */
+      %do j=1 %to &nk;
+        %if "&longknots" ne "T" %then %do;
+          x1p&j=round(x1p&j, .00001);
+        %end;
+        call symput('m'||trim(left(&j)), trim(left(x1p&j)));
+        %if &j ne 1 %then %do;  if x1p&j eq x1p%eval(&j -1) then flag=1;  %end;
+      %end;
+    call symput('flag', flag);
+    range=x1p&kp2 - x1p&kp1;
+    %if %length(&refval) eq 0 %then call symput('refval', trim(left(x1p&kp1)));;
+    lowfr=round(100*(x1p1 - x1p&kp1)/range);
+    hifr=round(100*(x1p&kp2 - x1p&nk)/range);
+    call symput ('lowfr', trim(left(lowfr)));
+    call symput ('hifr', trim(left(hifr)));
+    put "Percent of range of &splvbl below first knot is " lowfr " . ";
+    put "Percent of range of &splvbl above last knot is " hifr " . ";
+    file print;
+    put "Percent of range of &splvbl below the first knot is " lowfr " . ";
+    put "Percent of range of &splvbl above the last knot  is " hifr " . ";
+run;
+
+   
+ %if &flag eq 1 %then %do;
+   data _null_;
+    nk=&nk;
+    put 'ERR''OR in macro run:  The spline-making procedure did not generate';
+    put '   ' nk ' distinct knot points.';
+    put 'You will either have to change the number of knot points';
+    put '     or supply values for the knots, i.e. KNOT1=';
+    put 'The macro will terminate.';
+    file print;
+    put 'ERR''OR in macro run:  The spline-making procedure did not generate';
+    put '   ' nk ' distinct knot points.';
+    put 'You will either have to change the number of knot points';
+     put '     or supply values for the knots, i.e. KNOT1=';
+    put 'The macro will terminate.';
+  run;
+title3 'list of knots showing repeated values';
+proc print data=_stats_;  var x1p1 - x1p&kp;  run;
+title3;
+%goto outd;
+%end; /** end of &flag eq 1 */
+  
+%end; /** end of %if &_sckn_ eq , i.e., knot1 is empty **/
+   
+/* list of knot points given */
+%else %do;
+
+%if %length(&knot1) eq 0 %then %do;  %let nk = 0;  %end;
+%else %do;  %let nk=%sysfunc(countw(&knot1, ' '));  %end;
+  /* make &nk macro variables, m1.... */
+  %do i=1 %to &nk;
+    %let m&i = %scan(&knot1, &i, %str( ));
+       %end;
+
+
+  PROC UNIVARIATE DATA=&data  NOPRINT;
+   VAR &splvbl; 
+   OUTPUT OUT=_stats_ pctlpts=0 100 
+   PCTLPRE=x1 PCTLNAME=p0-p1;
+   run;
+
+   DATA a; *_NULL_;  
+   SET _stats_;
+    range=x1p1 - x1p0;
+    %if %length(&refval) eq 0 %then call symput('refval', trim(left(p0)));;
+    lowfr=round(100*(&m1 - x1p0)/range);
+    hifr=round(100*(x1p1 - &&m&nk)/range);
+ 
+    put "Percent of range of &splvbl below the first knot is " lowfr " . ";
+    put "Percent of range of &splvbl above the last knot is " hifr " . ";
+    file print;
+    put "Percent of range of &splvbl below first knot is " lowfr " . ";
+    put "Percent of range of &splvbl above last knot is " hifr " . ";
+run;
+
+%end;  /* end of if knot1 is not empty **/
+
+  
+%let ngrp= %sysfunc(ceil(&nk/ 8));
+
+%do i=0 %to %eval(&ngrp-1);
+   
+   %let _m&i=;
+   %do j=1 %to 8;
+      %local m;
+      %let m=%eval(&j + &i * 8);      
+      %if &m <= &nk %then %do;
+       %let _m&i=&&_m&i &&m&m;
+	%end;      
+      %end;
+   
+%end; 
+   
+data _null_;
+put @5  "Knots for &splvbl:";
+  /***
+   put @5 "m2 is: &_m2";
+   put @5 "m1 is: &_m1";
+   put @5 "m0 is: &_m0";
+   put @5 "ngrp is: &ngrp";
+   
+***/
+
+    %do i=0 %to %eval(&ngrp-1);
+      put @5 "&&_m&i";
+       %end;
+   
+   
+      file print;
+    put @5  "Knots for &splvbl:";
+    %do i=0 %to %eval(&ngrp -1);
+      put @5 "&&_m&i";
+       %end;
+ run; 
+   
+  
+*---------------------------------;  
+
+/* generate the graphing points */
+%if &makepts eq T %then %do;
+    proc means /*univariate*/ noprint data=&data;  
+      var &splvbl &covar;
+      output  out=_mm_  
+	 %if %length(&adjdat) eq 0 and %length(&covar) ne 0 %then %do;
+	    median=q1 &covar
+	       %end;
+      max(&splvbl)=_maxx_   min(&splvbl)=_minx_ ;
+    run;
+  %if "&adjdat" eq "" %then %do; /*  no data set with values
+                                  to use for graphing is given */
+      data _estpts_;  set _mm_;  run;
+     %end;
+   
+  %else %if "&adjdat" ne "" %then %do;
+    data _estpts_;  merge _mm_  &adjdat;    run;
+     %end;
+   
+  data _estpts_;  
+  set _estpts_;
+  length _inp_ 3;  _inp_=0;
+  intvl=(_maxx_-_minx_)/500;
+  do k=0 to 500;  &splvbl= _minx_ + k*intvl;  output;  end;
+  %if "&refval" ne "" %then %do;  &splvbl = &refval;  output;  %end;
+  call symput ('hiend', _maxx_);
+  call symput ('lowend', _minx_);
+  keep &splvbl  _inp_ &covar ;
+  run;
+
+
+
+%if %length(&extrapoints) ne 0 %then %do;
+   data _pp_;  set _estpts_;  if _n_ eq 1;  run;
+   data _pp_;  set _pp_;
+     %do i=1 %to %numargs(&extrapoints) ;
+         &splvbl=%scan(&extrapoints, &i, %str( ));  _inp_=1;  output;
+      %end;
+   run;
+
+   data _estpts_;  set _estpts_ _pp_;  run;
+   run;
+%end;
+   
+%end;  /* end of makepts eq T */
+
+
+%if "&refval" ne "" %then %do;
+/* checking that reference value is inside data */
+  data _null_;  hiend=&hiend;  lowend=&lowend;  refval=&refval;
+  if refval lt lowend then do;
+    put 'WARN''ING:  Your reference value,' refval ',  is ';
+    put '          lower than the lowest value of the exposure in of the data, ' lowend '.';
+    put '   The macro will continue, but the graph may look strange.';
+  end;
+  if refval gt hiend then do;
+    put 'WARN''ING:  Your reference value, ' refval ', is';
+    put '          higher than the highest value of the exposure in the data, ' hiend '.';
+    put '    The macro will continue, but the graph may look strange.';
+  end;
+%end;
+
+
+
+%*Generate code for calculating dummy variables;
+
+
+  %LET v=&splvbl; %IF %LENGTH(&v)=8 %THEN %LET v7=%SUBSTR(&v,1,7);
+  %ELSE %LET v7=&v;
+  %GLOBAL _&v7; %LET _&v7=;
+%let k1=%eval(&nk - 1);  %let k2=%eval(&nk - 2);
+
+options notes;
+data  &outdat;  set &data _estpts_ (in=inest) ;
+length _idvar_ $12 ;
+_ine_=inest;
+%if "&id" ne "" %then %do;  _idvar_=&id;  %end;
+%else %do;  _idvar_=-_n_;  %end;
+/* make up vbl x, which is splvbl-refval */
+%if &refval ne %then %do;  x=&splvbl - &refval ;  %end;
+%else %do;  x=&splvbl;  %end;
+  %do i =1 %to &nk;  _m_&i =&&m&i;    %end;
+  /* last knot and next-to-last knot */
+  _tk=_m_&nk;  _tk1=_m_&k1;  _t1=_m_1;
+  %IF &norm=0 %THEN %do;   kd=1;  %end;
+  %ELSE %IF &norm=1 %THEN %do;   kd=_tk - _tk1 ;  %end;
+  %ELSE %do;
+             kd=(_tk - _t1)**.666666666667 ;
+   %end;
+    %DO j=1 %TO &k2;
+     &v&j=max((&v-_m_&j)/kd, 0)**3 + ((_tk1-_m_&j)*max((&v-_tk)/kd, 0)**3
+        -(_tk-_m_&j)*max((&v-_tk1)/kd, 0)**3)/(_tk-_tk1);
+    %END;
+drop _t1 _tk _tk1  ;
+run;
+%if &notes eq NOTES %then %do;
+proc means n mean std min max data=&outdat;  var &splvbl &covar ;  run;
+%end;
+
+proc print data=&outdat (obs=1);  var &splvbl
+  %do i=1 %to &k2;  &splvbl&i  %end; ;
+where _ine_ eq 1 and &splvbl eq &refval;
+title5 "values of spline variables when &splvbl is &refval";
+run;
+/*
+OPTIONS _LAST_ = &_lastds_;
+*/
+%outd:  options &_nt  formdlim="&_fdl" ;
+title5;
+%mend Lmakespl;
+
+
+%lgtphcurv9(data=a.totalwt2, model=candlog,time=timef,
+					case=code, exposure=iso102,
+					adj=drink1 marry_2 preg1 exer1 fhovg1 kal ,
+					header1=isoflavones and breast cancer, graphtit=NONE,					
+					pictname=isf, hpct=100, lpct=0,nk=3,
+					pwhich=spline, axordh=0 to 3 by 1, axordv=0 to 3 by 1, klines=T,
+					refval=min, vlabel=relative risk, hlabel=isoflavone,
+					footer=%quote(not adjusted),
+					testrep=short, modprint=f,
+					plot=2); 
